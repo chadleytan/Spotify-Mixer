@@ -1,6 +1,7 @@
 import React from 'react';
 import $ from 'jquery'; 
 import SpotifyWebApi from 'spotify-web-api-js';
+import TrackItem from './TrackItem';
 
 const spotifyApi = new SpotifyWebApi();
 
@@ -31,67 +32,106 @@ class App extends React.Component {
     this.state = {
       device_id : null,
       loggedIn: token ? true : false,
-      nowPlaying: {name: 'Not Checked', albumArt:''}
+      nowPlaying: {name: 'Not Checked', albumArt:''},
+      skipTime: 0,
+      searchTrack: "",
+      tracks:[]
     }
+    this.handleChange = this.handleChange.bind(this);
+    this.handlePlay = this.handlePlay.bind(this);
+    this.getNowPlaying = this.getNowPlaying.bind(this);
   }
 
   getNowPlaying() {
     spotifyApi.getMyCurrentPlaybackState()
     .then((response) => {
       console.log(response)
-      this.setState({
-        device_id: response.device.id,
-        nowPlaying: {
-          name: response.item.name,
-          albumArt: response.item.album.images[0].url
-        }
-      })
+      if (response && response.item) {
+        this.setState({
+          device_id: response.device.id,
+          nowPlaying: {
+            name: response.item.name,
+            albumArt: response.item.album.images[0].url
+          }
+        });
+      }
     })
   }
 
+  handleChange(event) {
+    const {name, value} = event.target;
 
-// Functions related to using the Spotify Web Player 
-// Play a specified track on the Web Playback SDK's device ID
-Play() {
-  console.log("trying to play track");
-  console.log(spotifyApi.getAccessToken);
-  console.log(this.state.t);
-  $.ajax({
-      url: "https://api.spotify.com/v1/me/player/play?device_id=" + this.state.device_id,
-      type: "PUT",
-      data: '{"uris": ["spotify:track:1RMJOxR6GRPsBHL8qeC2ux"]}',
-      beforeSend: function(xhr){xhr.setRequestHeader('Authorization', 'Bearer ' + spotifyApi.getAccessToken());},
-      success: function(data) { 
-          console.log(data)
-      }
-  });
-}
+    this.setState({
+        [name]: value
+    });
+  }
 
-// SearchTrack(event){
-//   const {name, value} = event.target;
-//   $.ajax({
-//       url: "https://api.spotify.com/v1/search?q=" + value + "&type=track&market=US&limit=10",
-//       type: "GET",
-//       headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.state.token},
-//       success: function(data) {
-//           console.log(data);
-//       }
-//   });
-// }
 
-// // Skip to a certain position in the song
-// SkipToPosition(event) {
-//   this.state.player.seek(time * 1000).then(() => {
-//       console.log('Changed position!');
-//   });
-// }
+  // Functions related to using the Spotify Web Player 
+  // Play a specified track on the Web Playback SDK's device ID
+  handlePlay(track_id) {
+    console.log("Trying to play");
+    console.log(this.state.device_id);
+    var self = this;
+    // const track_id = "spotify:track:46eu3SBuFCXWsPT39Yg3tJ";
+    if (this.state.device_id){
+      $.ajax({
+          url: "https://api.spotify.com/v1/me/player/play?device_id=" + this.state.device_id,
+          type: "PUT",
+          data: '{"uris": ["' + track_id + '"]}',
+          beforeSend: function(xhr){xhr.setRequestHeader('Authorization', 'Bearer ' + spotifyApi.getAccessToken());},
+          success: function(data) { 
+            setTimeout(function() {
+              self.getNowPlaying();
+            },500);
+          }
+      });
+    }
+    else {
+      console.log("Need to get device id first. Click Check Now Playing");
+    }
+  }
+
+  searchTrack(){
+    console.log("trying to search");
+    var self = this;
+    if (this.searchTrack !== "")
+    {
+      $.ajax({
+          url: "https://api.spotify.com/v1/search?q=" + this.state.searchTrack + "&type=track&market=US&limit=10",
+          type: "GET",
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + spotifyApi.getAccessToken()},
+          success: function(data) {
+            self.setState ({
+              tracks: Object.entries(data.tracks.items).map(([key,value]) => { 
+                return {
+                    id:key,
+                    trackInfo: value
+                }
+              })
+            })
+          }
+      });
+    }
+  }
+
+  // Skip to a certain position in the song
+  skipToPosition() {
+    spotifyApi.seek(this.state.skipTime * 1000).then(() => {
+        console.log('Changed position!');
+    });
+  }
 
   render(){
+    const trackItems = this.state.tracks.map(track =><TrackItem key={track.id} trackInfo={track.trackInfo} handlePlay={this.handlePlay}/>);
+
     return (
       <div className="App">
         {
           !this.state.loggedIn &&
-          <a href='http://localhost:8888'>Login to Spotify</a>
+          <a href='http://localhost:8888'>
+            Login to Spotify
+          </a>
         }
         <div>
           Now Playing: { this.state.nowPlaying.name }
@@ -108,9 +148,41 @@ Play() {
               </button>
 
               <div className="container">
-                <button onClick={() => this.Play()}>
-                  Play Track
-                </button>
+                {/* <div className="play-track">
+                  <button onClick={() => this.play()}>
+                    Play Track
+                  </button>
+                </div> */}
+
+                <div className="skip-time">
+                  <input 
+                    type="number"
+                    name="skipTime"
+                    onChange={this.handleChange}
+                    value={this.state.skipTime}
+                    placeholder="0"
+                  />
+                  <button onClick={() => this.skipToPosition()}>
+                    Skip to Time
+                  </button>
+                </div>
+                
+                <div className="search-track">
+                  <input 
+                    type="text"
+                    name="searchTrack"
+                    onChange={this.handleChange}
+                    value={this.state.searchTrack}
+                    placeholder="Search Track"
+                  />
+                  <button onClick={() => this.searchTrack()}>
+                    Search Track
+                  </button>
+                </div>
+                <div className="track-list">
+                  {trackItems}
+                </div>
+                
               </div>
             </div>
           }
