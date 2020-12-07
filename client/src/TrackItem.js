@@ -8,6 +8,9 @@ function TrackItem(props) {
             <button onClick ={props.handlePlay.bind(this, props.trackInfo.uri)}>
                 Play
             </button>
+            <button onClick={props.queueTrack.bind(this, props.trackInfo.uri)}>
+                Queue Up
+            </button>
         </div>
     );
 }

@@ -43,6 +43,9 @@ class App extends React.Component {
     this.handleStatus = this.handleStatus.bind(this);
     this.getNowPlaying = this.getNowPlaying.bind(this);
     this.refreshPlaying = this.refreshPlaying.bind(this);
+    this.queueTrack = this.queueTrack.bind(this);
+    this.skipToNextTrack = this.skipToNextTrack.bind(this);
+    this.skipToPreviousTrack = this.skipToPreviousTrack.bind(this);
   }
 
   componentDidMount(){
@@ -60,7 +63,7 @@ class App extends React.Component {
   getNowPlaying() {
     spotifyApi.getMyCurrentPlaybackState()
     .then((response) => {
-      console.log(response)
+      // console.log(response)
       if (response && response.item) {
         this.setState({
           device_id: response.device.id,
@@ -87,7 +90,6 @@ class App extends React.Component {
   // Play a specified track on the Web Playback SDK's device ID
   handlePlay(track_id) {
     console.log("Trying to play");
-    console.log(this.state.device_id);
     var self = this;
     
     if (this.state.device_id){
@@ -131,6 +133,29 @@ class App extends React.Component {
     }
   }
 
+  // Add an item to the end of the user's current plaback queue
+  queueTrack(track_id) {
+    spotifyApi.queue(track_id)
+  }
+
+  skipToNextTrack() {
+    console.log("Skip to Next Track");
+    spotifyApi.skipToNext()
+    .then((response) => {
+      console.log(response);
+      this.getNowPlaying();
+    });
+  }
+
+  skipToPreviousTrack() {
+    console.log("Skip to Previous Track");
+    spotifyApi.skipToPrevious()
+    .then((response) => {
+      console.log(response);
+      this.getNowPlaying();
+    });
+  }
+
   searchTrack(){
     console.log("trying to search");
     var self = this;
@@ -163,7 +188,14 @@ class App extends React.Component {
   }
 
   render(){
-    const trackItems = this.state.tracks.map(track =><TrackItem key={track.id} trackInfo={track.trackInfo} handlePlay={this.handlePlay}/>);
+    const trackItems = this.state.tracks.map(track =>
+      <TrackItem 
+        key={track.id} 
+        trackInfo={track.trackInfo} 
+        handlePlay={this.handlePlay}
+        queueTrack={this.queueTrack}
+      />
+    );
 
     return (
       <div className="App">
@@ -184,16 +216,22 @@ class App extends React.Component {
                 <img src={this.state.nowPlaying.albumArt} style={{ height: 150 }} alt='Album'/>
               </div>
 
-              <button onClick={() => this.getNowPlaying()}>
+              {/* <button onClick={() => this.getNowPlaying()}>
                 Check Now Playing
-              </button>
+              </button> */}
 
               <div className="container">
-                <div className="active-status">
+                <div className="play-status">
+                  <button onClick={() => this.skipToPreviousTrack()}>
+                    Prev
+                  </button>
                   <button onMouseOver={() => this.getNowPlaying()} onClick={() => this.handleStatus()}>
                     {
-                      this.state.nowPlaying.isPlaying ? <p>Pause</p> : <p>Resume</p>
+                      this.state.nowPlaying.isPlaying ? <span>Pause</span> : <span>Resume</span>
                     } 
+                  </button>
+                  <button onClick={() => this.skipToNextTrack()}>
+                    Next
                   </button>
                 </div>
 
