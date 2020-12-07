@@ -32,14 +32,29 @@ class App extends React.Component {
     this.state = {
       device_id : null,
       loggedIn: token ? true : false,
-      nowPlaying: {name: 'Not Checked', albumArt:''},
+      nowPlaying: {name: 'Not Checked', albumArt:'', isPlaying: false},
       skipTime: 0,
       searchTrack: "",
       tracks:[]
     }
+
     this.handleChange = this.handleChange.bind(this);
     this.handlePlay = this.handlePlay.bind(this);
+    this.handleStatus = this.handleStatus.bind(this);
     this.getNowPlaying = this.getNowPlaying.bind(this);
+    this.refreshPlaying = this.refreshPlaying.bind(this);
+  }
+
+  componentDidMount(){
+    this.refreshPlaying();
+  }
+
+  // Checks what is currently playing every x seconds
+  refreshPlaying() {
+    const x = 10;
+
+    this.getNowPlaying();
+    setTimeout(this.refreshPlaying, x*1000);
   }
 
   getNowPlaying() {
@@ -51,7 +66,8 @@ class App extends React.Component {
           device_id: response.device.id,
           nowPlaying: {
             name: response.item.name,
-            albumArt: response.item.album.images[0].url
+            albumArt: response.item.album.images[0].url,
+            isPlaying: response.is_playing
           }
         });
       }
@@ -73,7 +89,7 @@ class App extends React.Component {
     console.log("Trying to play");
     console.log(this.state.device_id);
     var self = this;
-    // const track_id = "spotify:track:46eu3SBuFCXWsPT39Yg3tJ";
+    
     if (this.state.device_id){
       $.ajax({
           url: "https://api.spotify.com/v1/me/player/play?device_id=" + this.state.device_id,
@@ -88,7 +104,30 @@ class App extends React.Component {
       });
     }
     else {
-      console.log("Need to get device id first. Click Check Now Playing");
+      console.log("Need to get device id first. Make sure Spotify device is currently playing music");
+    }
+  }
+
+  // Resume/Pause
+  handleStatus() {
+    if (this.state.device_id) {
+      if (this.state.nowPlaying.isPlaying) {
+        spotifyApi.pause();
+      }
+      else {
+        spotifyApi.play();
+      }
+
+      this.setState({
+        nowPlaying: {
+          name: this.state.nowPlaying.name,
+          albumArt: this.state.nowPlaying.albumArt,
+          isPlaying: !this.state.nowPlaying.isPlaying
+        }
+      });
+    }
+    else {
+      console.log("Need to get device id first. Make sure Spotify device is currently playing music");
     }
   }
 
@@ -102,6 +141,7 @@ class App extends React.Component {
           type: "GET",
           headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + spotifyApi.getAccessToken()},
           success: function(data) {
+            console.log(data);
             self.setState ({
               tracks: Object.entries(data.tracks.items).map(([key,value]) => { 
                 return {
@@ -134,25 +174,28 @@ class App extends React.Component {
           </a>
         }
         <div>
-          Now Playing: { this.state.nowPlaying.name }
-        </div>
-        <div>
-          <img src={this.state.nowPlaying.albumArt} style={{ height: 150 }} alt='Album'/>
-        </div>
-        <div>
           {
             this.state.loggedIn &&
             <div>
+              <div>
+                Now Playing: { this.state.nowPlaying.name }
+              </div>
+              <div>
+                <img src={this.state.nowPlaying.albumArt} style={{ height: 150 }} alt='Album'/>
+              </div>
+
               <button onClick={() => this.getNowPlaying()}>
                 Check Now Playing
               </button>
 
               <div className="container">
-                {/* <div className="play-track">
-                  <button onClick={() => this.play()}>
-                    Play Track
+                <div className="active-status">
+                  <button onMouseOver={() => this.getNowPlaying()} onClick={() => this.handleStatus()}>
+                    {
+                      this.state.nowPlaying.isPlaying ? <p>Pause</p> : <p>Resume</p>
+                    } 
                   </button>
-                </div> */}
+                </div>
 
                 <div className="skip-time">
                   <input 
