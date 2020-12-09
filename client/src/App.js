@@ -2,6 +2,7 @@ import React from 'react';
 import $ from 'jquery'; 
 import SpotifyWebApi from 'spotify-web-api-js';
 import TrackItem from './TrackItem';
+import global from './global.js';
 
 const spotifyApi = new SpotifyWebApi();
 
@@ -19,7 +20,7 @@ function getHashParams() {
 
 
 class App extends React.Component {
-  
+
   constructor() {
     super();
     const params = getHashParams();
@@ -32,7 +33,15 @@ class App extends React.Component {
     this.state = {
       device_id : null,
       loggedIn: token ? true : false,
-      nowPlaying: {name: 'Not Checked', albumArt:'', isPlaying: false},
+      nowPlaying: {
+        name: 'Not Checked', 
+        albumArt:'', 
+        isPlaying: false, 
+        progressMs: 0, 
+        duration_ms: 0,
+      },
+      shuffle: 0,
+      repeat: 0,
       skipTime: 0,
       searchTrack: "",
       tracks:[]
@@ -46,6 +55,8 @@ class App extends React.Component {
     this.queueTrack = this.queueTrack.bind(this);
     this.skipToNextTrack = this.skipToNextTrack.bind(this);
     this.skipToPreviousTrack = this.skipToPreviousTrack.bind(this);
+    this.toggleShuffle = this.toggleShuffle.bind(this);
+    this.toggleRepeat = this.toggleRepeat.bind(this);
   }
 
   componentDidMount(){
@@ -63,14 +74,16 @@ class App extends React.Component {
   getNowPlaying() {
     spotifyApi.getMyCurrentPlaybackState()
     .then((response) => {
-      // console.log(response)
+      console.log(response)
       if (response && response.item) {
         this.setState({
           device_id: response.device.id,
           nowPlaying: {
             name: response.item.name,
             albumArt: response.item.album.images[0].url,
-            isPlaying: response.is_playing
+            isPlaying: response.is_playing,
+            progressMs: response.progress_ms,
+            durationMs: response.item.duration_ms
           }
         });
       }
@@ -139,24 +152,28 @@ class App extends React.Component {
   }
 
   skipToNextTrack() {
+    var self = this;
     console.log("Skip to Next Track");
     spotifyApi.skipToNext()
     .then((response) => {
-      console.log(response);
-      this.getNowPlaying();
+      setTimeout(function() {
+        self.getNowPlaying();
+      }, 250);
     });
   }
 
   skipToPreviousTrack() {
+    var self = this;
     console.log("Skip to Previous Track");
     spotifyApi.skipToPrevious()
     .then((response) => {
-      console.log(response);
-      this.getNowPlaying();
+      setTimeout(function() {
+        self.getNowPlaying();
+      }, 250);
     });
   }
 
-  searchTrack(){
+  searchTrack() {
     console.log("trying to search");
     var self = this;
     if (this.searchTrack !== "")
@@ -178,6 +195,22 @@ class App extends React.Component {
           }
       });
     }
+  }
+
+  toggleShuffle() {
+    console.log("Toggle Shuffle");
+    spotifyApi.setShuffle(global.shuffleOptions[this.state.shuffle]);
+    this.setState({
+      shuffle: (this.state.shuffle + 1) % 2
+    })
+  }
+
+  toggleRepeat() {
+    console.log("Change Repeat");
+    spotifyApi.setRepeat(global.repeatOptions[this.state.repeat]);
+    this.setState({
+      repeat: (this.state.repeat + 1) % 3
+    })
   }
 
   // Skip to a certain position in the song
@@ -233,8 +266,14 @@ class App extends React.Component {
                   <button onClick={() => this.skipToNextTrack()}>
                     Next
                   </button>
+                  <button onClick={() => this.toggleShuffle()}>
+                    Shuffle
+                  </button>
+                  <button onClick={() => this.toggleRepeat()}>
+                    Repeat
+                  </button>
                 </div>
-
+            
                 <div className="skip-time">
                   <input 
                     type="number"
