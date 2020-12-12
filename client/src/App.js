@@ -3,8 +3,10 @@ import $ from 'jquery';
 import SpotifyWebApi from 'spotify-web-api-js';
 import TrackItem from './TrackItem';
 import global from './global.js';
+import HelperClass from './HelperClass';
 
 const spotifyApi = new SpotifyWebApi();
+const helper = new HelperClass();
 
 function getHashParams() {
   var hashParams = {};
@@ -42,7 +44,8 @@ class App extends React.Component {
       },
       shuffle: 0,
       repeat: 0,
-      skipTime: 0,
+      skipMin: 0,
+      skipSec: 0,
       searchTrack: "",
       tracks:[]
     }
@@ -87,7 +90,7 @@ class App extends React.Component {
           }
         });
       }
-    })
+    });
   }
 
   handleChange(event) {
@@ -97,7 +100,6 @@ class App extends React.Component {
         [name]: value
     });
   }
-
 
   // Functions related to using the Spotify Web Player 
   // Play a specified track on the Web Playback SDK's device ID
@@ -137,7 +139,10 @@ class App extends React.Component {
         nowPlaying: {
           name: this.state.nowPlaying.name,
           albumArt: this.state.nowPlaying.albumArt,
-          isPlaying: !this.state.nowPlaying.isPlaying
+          isPlaying: !this.state.nowPlaying.isPlaying,
+          progressMs: this.state.nowPlaying.progressMs,
+          durationMs: this.state.nowPlaying.progressMs
+
         }
       });
     }
@@ -215,8 +220,8 @@ class App extends React.Component {
 
   // Skip to a certain position in the song
   skipToPosition() {
-    spotifyApi.seek(this.state.skipTime * 1000).then(() => {
-        console.log('Changed position!');
+    spotifyApi.seek(helper.calculateMS(this.state.skipMin, this.state.skipSec)).then(() => {
+        console.log('Changed position to: ' + helper.calculateMS(this.state.skipMin, this.state.skipSec)+ 'ms');
     });
   }
 
@@ -273,13 +278,24 @@ class App extends React.Component {
                     Repeat
                   </button>
                 </div>
-            
+                
+                <div className="track-progress">
+                    <p>Track length: {helper.calculateTimeLength(this.state.nowPlaying.durationMs)}</p>
+                </div>
+
                 <div className="skip-time">
                   <input 
                     type="number"
-                    name="skipTime"
+                    name="skipMin"
                     onChange={this.handleChange}
-                    value={this.state.skipTime}
+                    value={this.state.skipMin}
+                    placeholder="0"
+                  />
+                  <input 
+                    type="number"
+                    name="skipSec"
+                    onChange={this.handleChange}
+                    value={this.state.skipSec}
                     placeholder="0"
                   />
                   <button onClick={() => this.skipToPosition()}>
