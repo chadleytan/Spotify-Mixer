@@ -26,15 +26,16 @@ class App extends React.Component {
   constructor() {
     super();
     const params = getHashParams();
-    const token = params.access_token;
+    const access_token = params.access_token;
 
-    if(token) {
-      spotifyApi.setAccessToken(token);
+    if(access_token) {
+      spotifyApi.setAccessToken(access_token);
     }
 
     this.state = {
       device_id : null,
-      loggedIn: token ? true : false,
+      refresh_token: params.refresh_token,
+      loggedIn: access_token ? true : false,
       nowPlaying: {
         name: 'Not Checked', 
         albumArt:'', 
@@ -60,6 +61,7 @@ class App extends React.Component {
     this.skipToPreviousTrack = this.skipToPreviousTrack.bind(this);
     this.toggleShuffle = this.toggleShuffle.bind(this);
     this.toggleRepeat = this.toggleRepeat.bind(this);
+    this.refreshToken = this.refreshToken.bind(this);
   }
 
   componentDidMount(){
@@ -76,7 +78,7 @@ class App extends React.Component {
 
   getNowPlaying() {
     spotifyApi.getMyCurrentPlaybackState()
-    .then((response) => {
+    .then((response, error) => {
       console.log(response)
       if (response && response.item) {
         this.setState({
@@ -90,7 +92,23 @@ class App extends React.Component {
           }
         });
       }
+      else if (error) {
+        this.refreshToken();
+      }
     });
+  }
+
+  refreshToken() {
+    console.log("Refresh Token")
+    $.ajax({
+      url:"http://localhost:8888/refresh_token",
+      data: {
+        'refresh_token': this.state.refresh_token
+      }
+    }).then((response) => {
+      spotifyApi.setAccessToken(response.access_token);
+      console.log(response);
+    })
   }
 
   handleChange(event) {
@@ -243,6 +261,7 @@ class App extends React.Component {
             Login to Spotify
           </a>
         }
+        <button onClick={() => this.refreshToken()}>Refresh Token</button>
         <div>
           {
             this.state.loggedIn &&
