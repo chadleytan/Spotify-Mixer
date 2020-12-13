@@ -153,13 +153,6 @@ class App extends React.Component {
   // Resume/Pause
   handleStatus() {
     if (this.state.device_id) {
-      if (this.state.nowPlaying.isPlaying) {
-        spotifyApi.pause();
-      }
-      else {
-        spotifyApi.play();
-      }
-
       this.setState({
         nowPlaying: {
           name: this.state.nowPlaying.name,
@@ -167,10 +160,17 @@ class App extends React.Component {
           albumArt: this.state.nowPlaying.albumArt,
           isPlaying: !this.state.nowPlaying.isPlaying,
           progressMs: this.state.nowPlaying.progressMs,
-          durationMs: this.state.nowPlaying.progressMs
-
+          durationMs: this.state.nowPlaying.durationMs
         }
-      });
+      }, function() {
+        if (!this.state.nowPlaying.isPlaying) {
+          spotifyApi.pause();
+        }
+        else {
+          spotifyApi.play();
+        }
+      }
+      );
     }
     else {
       console.log("Need to get device id first. Make sure Spotify device is currently playing music");
