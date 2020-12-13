@@ -2,6 +2,7 @@ import React from 'react';
 import $ from 'jquery'; 
 import SpotifyWebApi from 'spotify-web-api-js';
 import TrackItem from './TrackItem';
+import QueueItem from './QueueItem';
 import global from './global.js';
 import HelperClass from './HelperClass';
 
@@ -36,6 +37,7 @@ class App extends React.Component {
       device_id : null,
       refresh_token: params.refresh_token,
       loggedIn: access_token ? true : false,
+      showOwnQueue: false,
       nowPlaying: {
         name: 'Not Checked', 
         albumArt:'', 
@@ -48,7 +50,8 @@ class App extends React.Component {
       skipMin: 0,
       skipSec: 0,
       searchTrack: "",
-      tracks:[]
+      tracks:[],
+      queue:[]
     }
 
     this.handleChange = this.handleChange.bind(this);
@@ -56,12 +59,14 @@ class App extends React.Component {
     this.handleStatus = this.handleStatus.bind(this);
     this.getNowPlaying = this.getNowPlaying.bind(this);
     this.refreshPlaying = this.refreshPlaying.bind(this);
-    this.queueTrack = this.queueTrack.bind(this);
+    this.queueTrackSpotify = this.queueTrackSpotify.bind(this);
+    this.queueTrackApp = this.queueTrackApp.bind(this);
     this.skipToNextTrack = this.skipToNextTrack.bind(this);
     this.skipToPreviousTrack = this.skipToPreviousTrack.bind(this);
     this.toggleShuffle = this.toggleShuffle.bind(this);
     this.toggleRepeat = this.toggleRepeat.bind(this);
     this.refreshToken = this.refreshToken.bind(this);
+    this.toggleQueue = this.toggleQueue.bind(this);
   }
 
   componentDidMount(){
@@ -177,9 +182,22 @@ class App extends React.Component {
     }
   }
 
-  // Add an item to the end of the user's current plaback queue
-  queueTrack(track_id) {
+  // Add an item to the end of the user's current plaback queue on Spotify
+  queueTrackSpotify(track_id) {
+    console.log("Add track to Spotify queue");
     spotifyApi.queue(track_id)
+  }
+
+  // Add an item to the end of the application queue
+  // Spotify currently cannot display the user's current queue so need to have seperate queue for mixer functionality
+  queueTrackApp(track_info) {
+    console.log("Add track to App queue");
+    console.log(track_info);
+    this.setState({
+      queue: [...this.state.queue, track_info]
+    }, function(){
+      console.log(this.state.queue);
+    });
   }
 
   skipToNextTrack() {
@@ -228,6 +246,20 @@ class App extends React.Component {
     }
   }
 
+  toggleQueue() {
+    console.log("toggle queue");
+    this.setState({
+      showOwnQueue: !this.state.showOwnQueue
+    }, function() {
+      if(this.state.showOwnQueue) {
+        console.log("Show queue");
+      }
+      else {
+        console.log("Hide queue");
+      }
+    });
+  }
+
   toggleShuffle() {
     console.log("Toggle Shuffle");
     this.setState({
@@ -259,7 +291,8 @@ class App extends React.Component {
         key={track.id} 
         trackInfo={track.trackInfo} 
         handlePlay={this.handlePlay}
-        queueTrack={this.queueTrack}
+        queueTrackApp={this.queueTrackApp}
+        queueTrackSpotify={this.queueTrackSpotify}
       />
     );
 
@@ -279,7 +312,7 @@ class App extends React.Component {
           {
             this.state.loggedIn &&
             <div>
-              <div>
+              <div className="now-playing">
                 Now Playing: { this.state.nowPlaying.name } - {this.state.nowPlaying.artist}
               </div>
               <div>
@@ -334,6 +367,18 @@ class App extends React.Component {
                     Skip to Time
                   </button>
                 </div>
+
+                <div className="own-queue">
+                  <button onClick={() => this.toggleQueue()}>
+                    Show Own Queue
+                  </button>
+                  {
+                    this.state.showOwnQueue &&
+                    <div className="queue-list">
+
+                    </div>
+                  }
+                </div>
                 
                 <div className="search-track">
                   <input 
@@ -350,7 +395,6 @@ class App extends React.Component {
                 <div className="track-list">
                   {trackItems}
                 </div>
-                
               </div>
             </div>
           }

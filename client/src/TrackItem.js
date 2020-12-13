@@ -8,8 +8,11 @@ function TrackItem(props) {
             <button onClick ={props.handlePlay.bind(this, props.trackInfo.uri)}>
                 Play
             </button>
-            <button onClick={props.queueTrack.bind(this, props.trackInfo.uri)}>
-                Queue Up
+            <button onClick={props.queueTrackApp.bind(this, props.trackInfo)}>
+                Queue
+            </button>
+            <button onClick={props.queueTrackSpotify.bind(this, props.trackInfo.uri)}>
+                Spotify Queue
             </button>
         </div>
     );
