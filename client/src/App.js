@@ -88,6 +88,7 @@ class App extends React.Component {
           device_id: response.device.id,
           nowPlaying: {
             name: response.item.name,
+            artist: response.item.artists[0].name,
             albumArt: response.item.album.images[0].url,
             isPlaying: response.is_playing,
             progressMs: response.progress_ms,
@@ -162,6 +163,7 @@ class App extends React.Component {
       this.setState({
         nowPlaying: {
           name: this.state.nowPlaying.name,
+          artist: this.state.nowPlaying.artist,
           albumArt: this.state.nowPlaying.albumArt,
           isPlaying: !this.state.nowPlaying.isPlaying,
           progressMs: this.state.nowPlaying.progressMs,
@@ -228,18 +230,20 @@ class App extends React.Component {
 
   toggleShuffle() {
     console.log("Toggle Shuffle");
-    spotifyApi.setShuffle(global.shuffleOptions[this.state.shuffle]);
     this.setState({
       shuffle: (this.state.shuffle + 1) % 2
-    })
+    }, function() {
+      spotifyApi.setShuffle(global.shuffleOptions[this.state.shuffle]);
+    });
   }
 
   toggleRepeat() {
     console.log("Change Repeat");
-    spotifyApi.setRepeat(global.repeatOptions[this.state.repeat]);
     this.setState({
       repeat: (this.state.repeat + 1) % 3
-    })
+    }, function() {
+      spotifyApi.setRepeat(global.repeatOptions[this.state.repeat]);
+    });
   }
 
   // Skip to a certain position in the song
@@ -267,13 +271,16 @@ class App extends React.Component {
             Login to Spotify
           </a>
         }
-        <button onClick={() => this.refreshToken()}>Refresh Token</button>
+        { 
+          this.state.loggedIn &&
+          <button onClick={() => this.refreshToken()}>Refresh Token</button>
+        }
         <div>
           {
             this.state.loggedIn &&
             <div>
               <div>
-                Now Playing: { this.state.nowPlaying.name }
+                Now Playing: { this.state.nowPlaying.name } - {this.state.nowPlaying.artist}
               </div>
               <div>
                 <img src={this.state.nowPlaying.albumArt} style={{ height: 150 }} alt='Album'/>
