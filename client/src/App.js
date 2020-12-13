@@ -79,7 +79,10 @@ class App extends React.Component {
   getNowPlaying() {
     spotifyApi.getMyCurrentPlaybackState()
     .then((response, error) => {
-      console.log(response)
+      const repeat_state = global.repeatOptions.indexOf(response.repeat_state);
+      const shuffle_state = global.shuffleOptions.indexOf(response.shuffle_state);
+
+      console.log(response);
       if (response && response.item) {
         this.setState({
           device_id: response.device.id,
@@ -89,7 +92,9 @@ class App extends React.Component {
             isPlaying: response.is_playing,
             progressMs: response.progress_ms,
             durationMs: response.item.duration_ms
-          }
+          },
+          repeat: repeat_state,
+          shuffle: shuffle_state
         });
       }
       else if (error) {
@@ -98,6 +103,7 @@ class App extends React.Component {
     });
   }
 
+  // Get and set new access token
   refreshToken() {
     console.log("Refresh Token")
     $.ajax({
@@ -291,10 +297,10 @@ class App extends React.Component {
                     Next
                   </button>
                   <button onClick={() => this.toggleShuffle()}>
-                    Shuffle
+                    Shuffle: {global.shuffleOptions[this.state.shuffle] ? <span>on</span> : <span>off</span>}
                   </button>
                   <button onClick={() => this.toggleRepeat()}>
-                    Repeat
+                    Repeat: {global.repeatOptions[this.state.repeat]}
                   </button>
                 </div>
                 
