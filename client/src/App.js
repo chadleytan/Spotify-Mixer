@@ -70,6 +70,7 @@ class App extends React.Component {
     this.refreshToken = this.refreshToken.bind(this);
     this.toggleQueue = this.toggleQueue.bind(this);
     this.playNextQueue = this.playNextQueue.bind(this);
+    this.clearQueue = this.clearQueue.bind(this);
   }
 
   componentDidMount(){
@@ -190,12 +191,12 @@ class App extends React.Component {
     });
   }
 
-  // Removes next song from queue
+  // Plays next song from own queue
   playNextQueue() {
     console.log("Playing next song in queue");
+    var self = this;
 
     if(this.state.queue.length !== 0) {
-      console.log("Trying to play");
       var play_data = {
         uris: [this.state.queue[0].uri],
         position_ms: helper.calculateMS(this.state.queueStartMin, this.state.queueStartSec)
@@ -203,13 +204,23 @@ class App extends React.Component {
       console.log(this.state.queue[0].uri);
       console.log(play_data);
       if (this.state.device_id){
-        spotifyApi.play(play_data);
-        
+        spotifyApi.play(play_data).then(() => {
+          // Removes song played from queue
+          self.setState({
+            queue: this.state.queue.shift()
+          });
+        });
       }
       else {
         console.log("Need to get device id first. Make sure Spotify device is currently playing music");
       }
     }
+  }
+
+  clearQueue() {
+    this.setState({
+      queue: []
+    });
   }
 
   skipToNextTrack() {
@@ -321,6 +332,12 @@ class App extends React.Component {
       />
     );
 
+    const queueItems = this.state.queue.map(track =>
+      <QueueItem
+        trackInfo={track}
+      />
+    );
+
     return (
       <div className="App">
         {
@@ -414,6 +431,9 @@ class App extends React.Component {
                       <button onClick={() =>this.playNextQueue()}>
                         Play Next in Queue
                       </button>
+                      <button onClick={() => this.clearQueue()}>
+                        Clear Queue
+                      </button>
                     </div>
                   }
                   <button onClick={() => this.toggleQueue()}>
@@ -422,7 +442,8 @@ class App extends React.Component {
                   {
                     this.state.showOwnQueue &&
                     <div className="queue-list">
-
+                      <h3>{this.state.queue.length > 0 ? <span>Queued Tracks:</span> : <span>No Tracks In Queue</span>}</h3>
+                      {queueItems}
                     </div>
                   }
                 </div>
@@ -439,9 +460,13 @@ class App extends React.Component {
                     Search Track
                   </button>
                 </div>
+                {
+                  this.state.tracks.length > 0 &&
                 <div className="track-list">
+                  <h3>Search Results:</h3>
                   {trackItems}
                 </div>
+                }
               </div>
             </div>
           }
