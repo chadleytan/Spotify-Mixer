@@ -2,6 +2,7 @@ import React from 'react';
 import $ from 'jquery'; 
 import SpotifyWebApi from 'spotify-web-api-js';
 import TrackItem from './TrackItem';
+import QueueItem from './QueueItem';
 import global from './global.js';
 import HelperClass from './HelperClass';
 
@@ -36,6 +37,7 @@ class App extends React.Component {
       device_id : null,
       refresh_token: params.refresh_token,
       loggedIn: access_token ? true : false,
+      showOwnQueue: false,
       nowPlaying: {
         name: 'Not Checked', 
         albumArt:'', 
@@ -47,8 +49,11 @@ class App extends React.Component {
       repeat: 0,
       skipMin: 0,
       skipSec: 0,
+      queueStartMin: 0,
+      queueStartSec: 0,
       searchTrack: "",
-      tracks:[]
+      tracks:[],
+      queue:[]
     }
 
     this.handleChange = this.handleChange.bind(this);
@@ -56,12 +61,16 @@ class App extends React.Component {
     this.handleStatus = this.handleStatus.bind(this);
     this.getNowPlaying = this.getNowPlaying.bind(this);
     this.refreshPlaying = this.refreshPlaying.bind(this);
-    this.queueTrack = this.queueTrack.bind(this);
+    this.queueTrackSpotify = this.queueTrackSpotify.bind(this);
+    this.queueTrackApp = this.queueTrackApp.bind(this);
     this.skipToNextTrack = this.skipToNextTrack.bind(this);
     this.skipToPreviousTrack = this.skipToPreviousTrack.bind(this);
     this.toggleShuffle = this.toggleShuffle.bind(this);
     this.toggleRepeat = this.toggleRepeat.bind(this);
     this.refreshToken = this.refreshToken.bind(this);
+    this.toggleQueue = this.toggleQueue.bind(this);
+    this.playNextQueue = this.playNextQueue.bind(this);
+    this.clearQueue = this.clearQueue.bind(this);
   }
 
   componentDidMount(){
@@ -150,36 +159,68 @@ class App extends React.Component {
     }
   }
 
-  // Resume/Pause
-  handleStatus() {
-    if (this.state.device_id) {
-      this.setState({
-        nowPlaying: {
-          name: this.state.nowPlaying.name,
-          artist: this.state.nowPlaying.artist,
-          albumArt: this.state.nowPlaying.albumArt,
-          isPlaying: !this.state.nowPlaying.isPlaying,
-          progressMs: this.state.nowPlaying.progressMs,
-          durationMs: this.state.nowPlaying.durationMs
-        }
-      }, function() {
-        if (!this.state.nowPlaying.isPlaying) {
-          spotifyApi.pause();
-        }
-        else {
-          spotifyApi.play();
-        }
+  // Add an item to the end of the user's current plaback queue on Spotify
+  queueTrackSpotify(track_id) {
+    console.log("Add track to Spotify queue");
+    spotifyApi.queue(track_id)
+  }
+
+  // Add an item to the end of the application queue
+  // Spotify currently cannot display the user's current queue so need to have seperate queue for mixer functionality
+  queueTrackApp(track_info) {
+    console.log("Add track to App queue");
+    console.log(track_info);
+    this.setState({
+      queue: [...this.state.queue, track_info]
+    }, function(){
+      console.log(this.state.queue);
+    });
+  }
+
+  toggleQueue() {
+    console.log("toggle queue");
+    this.setState({
+      showOwnQueue: !this.state.showOwnQueue
+    }, function() {
+      if(this.state.showOwnQueue) {
+        console.log("Show queue");
       }
-      );
-    }
-    else {
-      console.log("Need to get device id first. Make sure Spotify device is currently playing music");
+      else {
+        console.log("Hide queue");
+      }
+    });
+  }
+
+  // Plays next song from own queue
+  playNextQueue() {
+    console.log("Playing next song in queue");
+    var self = this;
+
+    if(this.state.queue.length !== 0) {
+      var play_data = {
+        uris: [this.state.queue[0].uri],
+        position_ms: helper.calculateMS(this.state.queueStartMin, this.state.queueStartSec)
+      }
+      console.log(this.state.queue[0].uri);
+      console.log(play_data);
+      if (this.state.device_id){
+        spotifyApi.play(play_data).then(() => {
+          // Removes song played from queue
+          self.setState({
+            queue: this.state.queue.shift()
+          });
+        });
+      }
+      else {
+        console.log("Need to get device id first. Make sure Spotify device is currently playing music");
+      }
     }
   }
 
-  // Add an item to the end of the user's current plaback queue
-  queueTrack(track_id) {
-    spotifyApi.queue(track_id)
+  clearQueue() {
+    this.setState({
+      queue: []
+    });
   }
 
   skipToNextTrack() {
@@ -204,27 +245,30 @@ class App extends React.Component {
     });
   }
 
-  searchTrack() {
-    console.log("trying to search");
-    var self = this;
-    if (this.searchTrack !== "")
-    {
-      $.ajax({
-          url: "https://api.spotify.com/v1/search?q=" + this.state.searchTrack + "&type=track&market=US&limit=10",
-          type: "GET",
-          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + spotifyApi.getAccessToken()},
-          success: function(data) {
-            console.log(data);
-            self.setState ({
-              tracks: Object.entries(data.tracks.items).map(([key,value]) => { 
-                return {
-                    id:key,
-                    trackInfo: value
-                }
-              })
-            })
-          }
-      });
+  // Resume/Pause
+  handleStatus() {
+    if (this.state.device_id) {
+      this.setState({
+        nowPlaying: {
+          name: this.state.nowPlaying.name,
+          artist: this.state.nowPlaying.artist,
+          albumArt: this.state.nowPlaying.albumArt,
+          isPlaying: !this.state.nowPlaying.isPlaying,
+          progressMs: this.state.nowPlaying.progressMs,
+          durationMs: this.state.nowPlaying.durationMs
+        }
+      }, function() {
+        if (!this.state.nowPlaying.isPlaying) {
+          spotifyApi.pause();
+        }
+        else {
+          spotifyApi.play();
+        }
+      }
+      );
+    }
+    else {
+      console.log("Need to get device id first. Make sure Spotify device is currently playing music");
     }
   }
 
@@ -253,13 +297,44 @@ class App extends React.Component {
     });
   }
 
+  searchTrack() {
+    console.log("trying to search");
+    var self = this;
+    if (this.searchTrack !== "")
+    {
+      $.ajax({
+          url: "https://api.spotify.com/v1/search?q=" + this.state.searchTrack + "&type=track&market=US&limit=10",
+          type: "GET",
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + spotifyApi.getAccessToken()},
+          success: function(data) {
+            console.log(data);
+            self.setState ({
+              tracks: Object.entries(data.tracks.items).map(([key,value]) => { 
+                return {
+                    id:key,
+                    trackInfo: value
+                }
+              })
+            })
+          }
+      });
+    }
+  }
+
   render(){
     const trackItems = this.state.tracks.map(track =>
       <TrackItem 
         key={track.id} 
         trackInfo={track.trackInfo} 
         handlePlay={this.handlePlay}
-        queueTrack={this.queueTrack}
+        queueTrackApp={this.queueTrackApp}
+        queueTrackSpotify={this.queueTrackSpotify}
+      />
+    );
+
+    const queueItems = this.state.queue.map(track =>
+      <QueueItem
+        trackInfo={track}
       />
     );
 
@@ -279,7 +354,7 @@ class App extends React.Component {
           {
             this.state.loggedIn &&
             <div>
-              <div>
+              <div className="now-playing">
                 Now Playing: { this.state.nowPlaying.name } - {this.state.nowPlaying.artist}
               </div>
               <div>
@@ -334,6 +409,44 @@ class App extends React.Component {
                     Skip to Time
                   </button>
                 </div>
+
+                <div className="own-queue">
+                  {
+                    this.state.queue.length > 0 &&
+                    <div className="queue-start">
+                      <input 
+                        type="number"
+                        name="queueStartMin"
+                        onChange={this.handleChange}
+                        value={this.state.queueStartMin}
+                        placeholder="0"
+                      />
+                      <input 
+                        type="number"
+                        name="queueStartSec"
+                        onChange={this.handleChange}
+                        value={this.state.queueStartSec}
+                        placeholder="0"
+                      />
+                      <button onClick={() =>this.playNextQueue()}>
+                        Play Next in Queue
+                      </button>
+                      <button onClick={() => this.clearQueue()}>
+                        Clear Queue
+                      </button>
+                    </div>
+                  }
+                  <button onClick={() => this.toggleQueue()}>
+                    Show Own Queue
+                  </button>
+                  {
+                    this.state.showOwnQueue &&
+                    <div className="queue-list">
+                      <h3>{this.state.queue.length > 0 ? <span>Queued Tracks:</span> : <span>No Tracks In Queue</span>}</h3>
+                      {queueItems}
+                    </div>
+                  }
+                </div>
                 
                 <div className="search-track">
                   <input 
@@ -347,10 +460,13 @@ class App extends React.Component {
                     Search Track
                   </button>
                 </div>
+                {
+                  this.state.tracks.length > 0 &&
                 <div className="track-list">
+                  <h3>Search Results:</h3>
                   {trackItems}
                 </div>
-                
+                }
               </div>
             </div>
           }
