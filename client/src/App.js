@@ -49,6 +49,8 @@ class App extends React.Component {
       repeat: 0,
       skipMin: 0,
       skipSec: 0,
+      queueStartMin: 0,
+      queueStartSec: 0,
       searchTrack: "",
       tracks:[],
       queue:[]
@@ -67,6 +69,7 @@ class App extends React.Component {
     this.toggleRepeat = this.toggleRepeat.bind(this);
     this.refreshToken = this.refreshToken.bind(this);
     this.toggleQueue = this.toggleQueue.bind(this);
+    this.playNextQueue = this.playNextQueue.bind(this);
   }
 
   componentDidMount(){
@@ -155,6 +158,82 @@ class App extends React.Component {
     }
   }
 
+  // Add an item to the end of the user's current plaback queue on Spotify
+  queueTrackSpotify(track_id) {
+    console.log("Add track to Spotify queue");
+    spotifyApi.queue(track_id)
+  }
+
+  // Add an item to the end of the application queue
+  // Spotify currently cannot display the user's current queue so need to have seperate queue for mixer functionality
+  queueTrackApp(track_info) {
+    console.log("Add track to App queue");
+    console.log(track_info);
+    this.setState({
+      queue: [...this.state.queue, track_info]
+    }, function(){
+      console.log(this.state.queue);
+    });
+  }
+
+  toggleQueue() {
+    console.log("toggle queue");
+    this.setState({
+      showOwnQueue: !this.state.showOwnQueue
+    }, function() {
+      if(this.state.showOwnQueue) {
+        console.log("Show queue");
+      }
+      else {
+        console.log("Hide queue");
+      }
+    });
+  }
+
+  // Removes next song from queue
+  playNextQueue() {
+    console.log("Playing next song in queue");
+
+    if(this.state.queue.length !== 0) {
+      console.log("Trying to play");
+      var play_data = {
+        uris: [this.state.queue[0].uri],
+        position_ms: helper.calculateMS(this.state.queueStartMin, this.state.queueStartSec)
+      }
+      console.log(this.state.queue[0].uri);
+      console.log(play_data);
+      if (this.state.device_id){
+        spotifyApi.play(play_data);
+        
+      }
+      else {
+        console.log("Need to get device id first. Make sure Spotify device is currently playing music");
+      }
+    }
+  }
+
+  skipToNextTrack() {
+    var self = this;
+    console.log("Skip to Next Track");
+    spotifyApi.skipToNext()
+    .then((response) => {
+      setTimeout(function() {
+        self.getNowPlaying();
+      }, 250);
+    });
+  }
+
+  skipToPreviousTrack() {
+    var self = this;
+    console.log("Skip to Previous Track");
+    spotifyApi.skipToPrevious()
+    .then((response) => {
+      setTimeout(function() {
+        self.getNowPlaying();
+      }, 250);
+    });
+  }
+
   // Resume/Pause
   handleStatus() {
     if (this.state.device_id) {
@@ -182,43 +261,28 @@ class App extends React.Component {
     }
   }
 
-  // Add an item to the end of the user's current plaback queue on Spotify
-  queueTrackSpotify(track_id) {
-    console.log("Add track to Spotify queue");
-    spotifyApi.queue(track_id)
-  }
-
-  // Add an item to the end of the application queue
-  // Spotify currently cannot display the user's current queue so need to have seperate queue for mixer functionality
-  queueTrackApp(track_info) {
-    console.log("Add track to App queue");
-    console.log(track_info);
+  toggleShuffle() {
+    console.log("Toggle Shuffle");
     this.setState({
-      queue: [...this.state.queue, track_info]
-    }, function(){
-      console.log(this.state.queue);
+      shuffle: (this.state.shuffle + 1) % 2
+    }, function() {
+      spotifyApi.setShuffle(global.shuffleOptions[this.state.shuffle]);
     });
   }
 
-  skipToNextTrack() {
-    var self = this;
-    console.log("Skip to Next Track");
-    spotifyApi.skipToNext()
-    .then((response) => {
-      setTimeout(function() {
-        self.getNowPlaying();
-      }, 250);
+  toggleRepeat() {
+    console.log("Change Repeat");
+    this.setState({
+      repeat: (this.state.repeat + 1) % 3
+    }, function() {
+      spotifyApi.setRepeat(global.repeatOptions[this.state.repeat]);
     });
   }
 
-  skipToPreviousTrack() {
-    var self = this;
-    console.log("Skip to Previous Track");
-    spotifyApi.skipToPrevious()
-    .then((response) => {
-      setTimeout(function() {
-        self.getNowPlaying();
-      }, 250);
+  // Skip to a certain position in the song
+  skipToPosition() {
+    spotifyApi.seek(helper.calculateMS(this.state.skipMin, this.state.skipSec)).then(() => {
+        console.log('Changed position to: ' + helper.calculateMS(this.state.skipMin, this.state.skipSec)+ 'ms');
     });
   }
 
@@ -244,45 +308,6 @@ class App extends React.Component {
           }
       });
     }
-  }
-
-  toggleQueue() {
-    console.log("toggle queue");
-    this.setState({
-      showOwnQueue: !this.state.showOwnQueue
-    }, function() {
-      if(this.state.showOwnQueue) {
-        console.log("Show queue");
-      }
-      else {
-        console.log("Hide queue");
-      }
-    });
-  }
-
-  toggleShuffle() {
-    console.log("Toggle Shuffle");
-    this.setState({
-      shuffle: (this.state.shuffle + 1) % 2
-    }, function() {
-      spotifyApi.setShuffle(global.shuffleOptions[this.state.shuffle]);
-    });
-  }
-
-  toggleRepeat() {
-    console.log("Change Repeat");
-    this.setState({
-      repeat: (this.state.repeat + 1) % 3
-    }, function() {
-      spotifyApi.setRepeat(global.repeatOptions[this.state.repeat]);
-    });
-  }
-
-  // Skip to a certain position in the song
-  skipToPosition() {
-    spotifyApi.seek(helper.calculateMS(this.state.skipMin, this.state.skipSec)).then(() => {
-        console.log('Changed position to: ' + helper.calculateMS(this.state.skipMin, this.state.skipSec)+ 'ms');
-    });
   }
 
   render(){
@@ -369,6 +394,28 @@ class App extends React.Component {
                 </div>
 
                 <div className="own-queue">
+                  {
+                    this.state.queue.length > 0 &&
+                    <div className="queue-start">
+                      <input 
+                        type="number"
+                        name="queueStartMin"
+                        onChange={this.handleChange}
+                        value={this.state.queueStartMin}
+                        placeholder="0"
+                      />
+                      <input 
+                        type="number"
+                        name="queueStartSec"
+                        onChange={this.handleChange}
+                        value={this.state.queueStartSec}
+                        placeholder="0"
+                      />
+                      <button onClick={() =>this.playNextQueue()}>
+                        Play Next in Queue
+                      </button>
+                    </div>
+                  }
                   <button onClick={() => this.toggleQueue()}>
                     Show Own Queue
                   </button>
