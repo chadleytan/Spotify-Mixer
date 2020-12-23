@@ -94,7 +94,26 @@ class App extends React.Component {
           player.addListener('playback_error', ({ message }) => { console.error(message); });
   
           // Playback status updates
-          player.addListener('player_state_changed', state => { console.log(state); });
+          player.addListener('player_state_changed', state => { 
+            console.log("changed"); 
+            console.log(state);
+            
+            if(state)
+            {
+              this.setState({
+                nowPlaying: {
+                  name: state.track_window.current_track.name,
+                  artist: state.track_window.current_track.artists[0].name,
+                  albumArt: state.track_window.current_track.album.images[0].url,
+                  isPlaying: !state.paused,
+                  progressMs: state.position,
+                  durationMs: state.duration
+                },
+                repeat: state.repeat_mode,
+                shuffle: state.shuffle
+              });
+            }  
+          });
   
           // Ready
           player.addListener('ready', data => {
@@ -133,7 +152,7 @@ class App extends React.Component {
       const repeat_state = global.repeatOptions.indexOf(response.repeat_state);
       const shuffle_state = global.shuffleOptions.indexOf(response.shuffle_state);
 
-      console.log(response);
+      // console.log(response);
       if (response && response.item) {
         this.setState({
           device_id: response.device.id,
@@ -403,16 +422,12 @@ class App extends React.Component {
                 <img src={this.state.nowPlaying.albumArt} style={{ height: 150 }} alt='Album'/>
               </div>
 
-              {/* <button onClick={() => this.getNowPlaying()}>
-                Check Now Playing
-              </button> */}
-
               <div className="container">
                 <div className="play-status">
                   <button onClick={() => this.skipToPreviousTrack()}>
                     Prev
                   </button>
-                  <button onMouseOver={() => this.getNowPlaying()} onClick={() => this.handleStatus()}>
+                  <button onClick={() => this.handleStatus()}>
                     {
                       this.state.nowPlaying.isPlaying ? <span>Pause</span> : <span>Resume</span>
                     } 
