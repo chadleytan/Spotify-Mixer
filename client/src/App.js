@@ -5,6 +5,7 @@ import TrackItem from './TrackItem';
 import QueueItem from './QueueItem';
 import global from './global.js';
 import HelperClass from './HelperClass';
+import loadSpotifyPlayer from './loadSpotifyPlayer.js';
 
 const spotifyApi = new SpotifyWebApi();
 const helper = new HelperClass();
@@ -36,6 +37,7 @@ class App extends React.Component {
     this.state = {
       device_id : null,
       refresh_token: params.refresh_token,
+      spotifySDKReady: false,
       loggedIn: access_token ? true : false,
       showOwnQueue: false,
       nowPlaying: {
@@ -74,6 +76,65 @@ class App extends React.Component {
   }
 
   componentDidMount(){
+    if (this.state.loggedIn) {
+      loadSpotifyPlayer(() => {
+        console.log('WebplaySDK');
+        window.onSpotifyWebPlaybackSDKReady = () => {
+          const token = spotifyApi.getAccessToken();
+          const player = new window.Spotify.Player({
+              name: 'Web Playback SDK Quick Start Player',
+              getOAuthToken: cb => { cb(token); }
+          });
+          
+  
+          // Error handling
+          player.addListener('initialization_error', ({ message }) => { console.error(message); });
+          player.addListener('authentication_error', ({ message }) => { console.error(message); });
+          player.addListener('account_error', ({ message }) => { console.error(message); });
+          player.addListener('playback_error', ({ message }) => { console.error(message); });
+  
+          // Playback status updates
+          player.addListener('player_state_changed', state => { 
+            console.log("changed"); 
+            console.log(state);
+            
+            if(state)
+            {
+              this.setState({
+                nowPlaying: {
+                  name: state.track_window.current_track.name,
+                  artist: state.track_window.current_track.artists[0].name,
+                  albumArt: state.track_window.current_track.album.images[0].url,
+                  isPlaying: !state.paused,
+                  progressMs: state.position,
+                  durationMs: state.duration
+                },
+                repeat: state.repeat_mode,
+                shuffle: state.shuffle
+              });
+            }  
+          });
+  
+          // Ready
+          player.addListener('ready', data => {
+              console.log('Ready with Device ID', data.device_id);
+              this.setState({
+                spotifySDKReady: true, 
+                device_id: data.device_id
+              })
+          });
+  
+          // Not Ready
+          player.addListener('not_ready', ({ device_id }) => {
+              console.log('Device ID has gone offline', device_id);
+          });
+  
+          // Connect to the player!
+          player.connect();
+        }
+      });
+    }
+
     this.refreshPlaying();
   }
 
@@ -91,7 +152,7 @@ class App extends React.Component {
       const repeat_state = global.repeatOptions.indexOf(response.repeat_state);
       const shuffle_state = global.shuffleOptions.indexOf(response.shuffle_state);
 
-      console.log(response);
+      // console.log(response);
       if (response && response.item) {
         this.setState({
           device_id: response.device.id,
@@ -207,7 +268,7 @@ class App extends React.Component {
         spotifyApi.play(play_data).then(() => {
           // Removes song played from queue
           self.setState({
-            queue: this.state.queue.shift()
+            queue: self.state.queue.slice(1)
           });
         });
       }
@@ -361,16 +422,12 @@ class App extends React.Component {
                 <img src={this.state.nowPlaying.albumArt} style={{ height: 150 }} alt='Album'/>
               </div>
 
-              {/* <button onClick={() => this.getNowPlaying()}>
-                Check Now Playing
-              </button> */}
-
               <div className="container">
                 <div className="play-status">
                   <button onClick={() => this.skipToPreviousTrack()}>
                     Prev
                   </button>
-                  <button onMouseOver={() => this.getNowPlaying()} onClick={() => this.handleStatus()}>
+                  <button onClick={() => this.handleStatus()}>
                     {
                       this.state.nowPlaying.isPlaying ? <span>Pause</span> : <span>Resume</span>
                     } 
