@@ -6,6 +6,8 @@ import QueueItem from './QueueItem';
 import global from './global.js';
 import HelperClass from './HelperClass';
 import loadSpotifyPlayer from './loadSpotifyPlayer.js';
+import ProgressBar from './ProgressBar';
+import './App.css';
 
 const spotifyApi = new SpotifyWebApi();
 const helper = new HelperClass();
@@ -45,7 +47,7 @@ class App extends React.Component {
         albumArt:'', 
         isPlaying: false, 
         progressMs: 0, 
-        duration_ms: 0,
+        durationMs: 0,
       },
       shuffle: 0,
       repeat: 0,
@@ -63,6 +65,7 @@ class App extends React.Component {
     this.handleStatus = this.handleStatus.bind(this);
     this.getNowPlaying = this.getNowPlaying.bind(this);
     this.refreshPlaying = this.refreshPlaying.bind(this);
+    this.progressTime = this.progressTime.bind(this);
     this.queueTrackSpotify = this.queueTrackSpotify.bind(this);
     this.queueTrackApp = this.queueTrackApp.bind(this);
     this.skipToNextTrack = this.skipToNextTrack.bind(this);
@@ -111,6 +114,8 @@ class App extends React.Component {
                 },
                 repeat: state.repeat_mode,
                 shuffle: state.shuffle
+              }, function() {
+                console.log('State Changed')
               });
             }  
           });
@@ -136,6 +141,7 @@ class App extends React.Component {
     }
 
     this.refreshPlaying();
+    this.progressTime();
   }
 
   // Checks what is currently playing every x seconds
@@ -144,6 +150,24 @@ class App extends React.Component {
 
     this.getNowPlaying();
     setTimeout(this.refreshPlaying, x*1000);
+  }
+
+  // Progresses time for currently playing track
+  progressTime() {
+    setTimeout(this.progressTime, 1000);
+
+    if (this.state.nowPlaying.isPlaying) {
+      this.setState({
+        nowPlaying: {
+          name: this.state.nowPlaying.name,
+          artist: this.state.nowPlaying.artist,
+          albumArt: this.state.nowPlaying.albumArt,
+          isPlaying: this.state.nowPlaying.isPlaying,
+          progressMs: this.state.nowPlaying.progressMs + 1000,
+          durationMs: this.state.nowPlaying.durationMs
+        }
+      });
+    }
   }
 
   getNowPlaying() {
@@ -242,13 +266,6 @@ class App extends React.Component {
     console.log("toggle queue");
     this.setState({
       showOwnQueue: !this.state.showOwnQueue
-    }, function() {
-      if(this.state.showOwnQueue) {
-        console.log("Show queue");
-      }
-      else {
-        console.log("Hide queue");
-      }
     });
   }
 
@@ -444,6 +461,10 @@ class App extends React.Component {
                 </div>
                 
                 <div className="track-progress">
+                    <p>Current Time: {helper.calculateTimeLength(this.state.nowPlaying.progressMs)}</p>
+                    <div>
+                      <ProgressBar percentage={(this.state.nowPlaying.progressMs/this.state.nowPlaying.durationMs * 100)}/>
+                    </div>
                     <p>Track length: {helper.calculateTimeLength(this.state.nowPlaying.durationMs)}</p>
                 </div>
 
@@ -494,7 +515,7 @@ class App extends React.Component {
                     </div>
                   }
                   <button onClick={() => this.toggleQueue()}>
-                    Show Own Queue
+                    {this.state.showOwnQueue ? <span>Hide</span> : <span>Show</span>} Own Queue
                   </button>
                   {
                     this.state.showOwnQueue &&
