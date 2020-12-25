@@ -12,3 +12,22 @@
   border-radius: inherit;
   transition: width .2s ease-in;
 }
+.album-art {
+  height: 200px;
+  width: 200px;
+  border-radius: 50%;
+  box-shadow: 0px 0px 0px 1px #fff inset;
+}
+
+.album-playing {
+  animation: rotation 6s infinite linear;
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}

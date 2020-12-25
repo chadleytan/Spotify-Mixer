@@ -171,7 +171,8 @@ class App extends React.Component {
       }, function() { // skips to next track in queue if "Mixing Mode is on"
         if (this.state.mixingMode) {
           if (this.state.nowPlaying.progressMs > this.state.nowPlaying.durationMs - 2000 
-            || (this.state.shouldSkip && this.state.nowPlaying.progressMs > helper.calculateMS(this.state.skipMin, this.state.skipSec))) {
+            || (this.state.shouldSkip 
+              && this.state.nowPlaying.progressMs > helper.calculateMS(this.state.skipMin, this.state.skipSec))) {
               console.log("Skipped");
             // Issue is that this can skip songs in queue
             this.playNextQueue();
@@ -465,7 +466,9 @@ class App extends React.Component {
                 Now Playing: { this.state.nowPlaying.name } - {this.state.nowPlaying.artist}
               </div>
               <div>
-                <img src={this.state.nowPlaying.albumArt} style={{ height: 150 }} alt='Album'/>
+                <img className={"album-art " + (this.state.nowPlaying.isPlaying ? "album-playing" : null)} 
+                src={this.state.nowPlaying.albumArt} alt='Album'
+                />
               </div>
 
               <div className="container">
