@@ -41,6 +41,7 @@ class App extends React.Component {
       refresh_token: params.refresh_token,
       spotifySDKReady: false,
       loggedIn: access_token ? true : false,
+      mixingMode: true,
       showOwnQueue: false,
       nowPlaying: {
         name: 'Not Checked', 
@@ -51,6 +52,7 @@ class App extends React.Component {
       },
       shuffle: 0,
       repeat: 0,
+      shouldSkip: false,
       skipMin: 0,
       skipSec: 0,
       queueStartMin: 0,
@@ -165,6 +167,15 @@ class App extends React.Component {
           isPlaying: this.state.nowPlaying.isPlaying,
           progressMs: this.state.nowPlaying.progressMs + 1000,
           durationMs: this.state.nowPlaying.durationMs
+        }
+      }, function() { // skips to next track in queue if "Mixing Mode is on"
+        if (this.state.mixingMode) {
+          if (this.state.nowPlaying.progressMs > this.state.nowPlaying.durationMs - 2000 
+            || (this.state.shouldSkip && this.state.nowPlaying.progressMs > helper.calculateMS(this.state.skipMin, this.state.skipSec))) {
+              console.log("Skipped");
+            // Issue is that this can skip songs in queue
+            this.playNextQueue();
+          }
         }
       });
     }
@@ -285,7 +296,8 @@ class App extends React.Component {
         spotifyApi.play(play_data).then(() => {
           // Removes song played from queue
           self.setState({
-            queue: self.state.queue.slice(1)
+            queue: self.state.queue.slice(1),
+            shouldSkip: false
           });
         });
       }
@@ -371,7 +383,24 @@ class App extends React.Component {
   // Skip to a certain position in the song
   skipToPosition() {
     spotifyApi.seek(helper.calculateMS(this.state.skipMin, this.state.skipSec)).then(() => {
-        console.log('Changed position to: ' + helper.calculateMS(this.state.skipMin, this.state.skipSec)+ 'ms');
+      console.log('Changed position to: ' + helper.calculateMS(this.state.skipMin, this.state.skipSec)+ 'ms');
+      this.setState({
+        nowPlaying: {
+          name: this.state.nowPlaying.name,
+          artist: this.state.nowPlaying.artist,
+          albumArt: this.state.nowPlaying.albumArt,
+          isPlaying: !this.state.nowPlaying.isPlaying,
+          progressMs: helper.calculateMS(this.state.skipMin, this.state.skipSec),
+          durationMs: this.state.nowPlaying.durationMs
+        }
+      });
+    });
+  }
+
+  toggleAutomaticSkip() {
+    console.log("Toggle Automatic Skip");
+    this.setState({
+      shouldSkip: !this.state.shouldSkip
     });
   }
 
@@ -393,7 +422,7 @@ class App extends React.Component {
                     trackInfo: value
                 }
               })
-            })
+            });
           }
       });
     }
@@ -467,6 +496,23 @@ class App extends React.Component {
                     </div>
                     <p>Track length: {helper.calculateTimeLength(this.state.nowPlaying.durationMs)}</p>
                 </div>
+                
+                <div className="end-time">
+                  <input 
+                    type="number"
+                    name="endMin"
+                    onChange={this.handleChange}
+                    value={this.state.endMin}
+                    placeholder="0"
+                  />
+                  <input 
+                    type="number"
+                    name="endSec"
+                    onChange={this.handleChange}
+                    value={this.state.endSec}
+                    placeholder="0"
+                  />
+                </div>
 
                 <div className="skip-time">
                   <input 
@@ -485,6 +531,9 @@ class App extends React.Component {
                   />
                   <button onClick={() => this.skipToPosition()}>
                     Skip to Time
+                  </button>
+                  <button onClick={() => this.toggleAutomaticSkip()}>
+                    Automatic Skip: {this.state.shouldSkip ? <span>On</span> : <span>Off</span>}
                   </button>
                 </div>
 
