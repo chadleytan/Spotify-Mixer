@@ -174,7 +174,7 @@ class App extends React.Component {
         if (this.state.mixingMode && this.state.queue.length > 0 ) {
           if (this.state.nowPlaying.progressMs > this.state.nowPlaying.durationMs - 2000 
             || (this.state.shouldSkip 
-              && this.state.nowPlaying.progressMs > helper.calculateMS(this.state.queue[0].endMin, this.state.queue[0].endSec))){
+              && this.state.nowPlaying.progressMs > helper.calculateMS(this.state.endMin, this.state.endSec))){
               console.log("Skipped");
             // Issue - Sometimes skips multiple times
             this.playNextQueue();
