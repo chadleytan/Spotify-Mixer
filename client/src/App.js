@@ -63,10 +63,12 @@ class App extends React.Component {
     }
 
     this.handleChange = this.handleChange.bind(this);
+    this.handleQueueChange = this.handleQueueChange.bind(this);
     this.handlePlay = this.handlePlay.bind(this);
     this.handleStatus = this.handleStatus.bind(this);
     this.getNowPlaying = this.getNowPlaying.bind(this);
     this.refreshPlaying = this.refreshPlaying.bind(this);
+    this.toggleMixingMode = this.toggleMixingMode.bind(this);
     this.progressTime = this.progressTime.bind(this);
     this.queueTrackSpotify = this.queueTrackSpotify.bind(this);
     this.queueTrackApp = this.queueTrackApp.bind(this);
@@ -228,7 +230,24 @@ class App extends React.Component {
     const {name, value} = event.target;
 
     this.setState({
-        [name]: value
+      [name]: value
+    });
+  }
+
+  handleQueueChange(event, key) {
+    const {name, value} = event.target;
+
+    this.setState(prevState => {
+      const queue = prevState.queue.map(track => 
+        (track.id === key ? 
+          Object.assign({}, track, {[name] : value}) :
+          track
+        )
+      );
+
+      return {
+        queue,
+      }
     });
   }
 
@@ -256,6 +275,13 @@ class App extends React.Component {
     }
   }
 
+  toggleMixingMode() {
+    console.log("toggle Mixing Mode");
+    this.setState({
+      mixingMode: !this.state.mixingMode
+    });
+  }
+
   // Add an item to the end of the user's current plaback queue on Spotify
   queueTrackSpotify(track_id) {
     console.log("Add track to Spotify queue");
@@ -268,7 +294,16 @@ class App extends React.Component {
     console.log("Add track to App queue");
     console.log(track_info);
     this.setState({
-      queue: [...this.state.queue, track_info]
+      queue: [...this.state.queue, 
+        {
+          id: track_info.id + new Date().getTime(),
+          info: track_info,
+          startMin: 0,
+          startSec: 0,
+          endMin: 0,
+          endSec: 0
+        }
+      ]
     }, function(){
       console.log(this.state.queue);
     });
@@ -288,10 +323,10 @@ class App extends React.Component {
 
     if(this.state.queue.length !== 0) {
       var play_data = {
-        uris: [this.state.queue[0].uri],
+        uris: [this.state.queue[0].info.uri],
         position_ms: helper.calculateMS(this.state.queueStartMin, this.state.queueStartSec)
       }
-      console.log(this.state.queue[0].uri);
+      console.log(this.state.queue[0].info.uri);
       console.log(play_data);
       if (this.state.device_id){
         spotifyApi.play(play_data).then(() => {
@@ -355,8 +390,7 @@ class App extends React.Component {
         else {
           spotifyApi.play();
         }
-      }
-      );
+      });
     }
     else {
       console.log("Need to get device id first. Make sure Spotify device is currently playing music");
@@ -390,7 +424,7 @@ class App extends React.Component {
           name: this.state.nowPlaying.name,
           artist: this.state.nowPlaying.artist,
           albumArt: this.state.nowPlaying.albumArt,
-          isPlaying: !this.state.nowPlaying.isPlaying,
+          isPlaying: this.state.nowPlaying.isPlaying,
           progressMs: helper.calculateMS(this.state.skipMin, this.state.skipSec),
           durationMs: this.state.nowPlaying.durationMs
         }
@@ -440,9 +474,13 @@ class App extends React.Component {
       />
     );
 
-    const queueItems = this.state.queue.map(track =>
+    const queueItems = this.state.queue.map((track, index) =>
       <QueueItem
+        key={index}
+        id={track.id}
         trackInfo={track}
+        mixingMode={this.state.mixingMode}
+        handleChange={(e, val) => this.handleQueueChange(e, val)}
       />
     );
 
@@ -456,7 +494,12 @@ class App extends React.Component {
         }
         { 
           this.state.loggedIn &&
-          <button onClick={() => this.refreshToken()}>Refresh Token</button>
+          <div>
+            <button onClick={() => this.refreshToken()}>Refresh Token</button>
+            <button onClick={() => this.toggleMixingMode()}>
+              Mixing Mode: {this.state.mixingMode ? <span>ON</span> : <span>OFF</span>}
+            </button>
+          </div>
         }
         <div>
           {
@@ -500,22 +543,26 @@ class App extends React.Component {
                     <p>Track length: {helper.calculateTimeLength(this.state.nowPlaying.durationMs)}</p>
                 </div>
                 
-                <div className="end-time">
-                  <input 
-                    type="number"
-                    name="endMin"
-                    onChange={this.handleChange}
-                    value={this.state.endMin}
-                    placeholder="0"
-                  />
-                  <input 
-                    type="number"
-                    name="endSec"
-                    onChange={this.handleChange}
-                    value={this.state.endSec}
-                    placeholder="0"
-                  />
-                </div>
+                {
+                  this.state.mixingMode &&
+                  <div className="end-time">
+                    <span>Current Track End Time: </span>
+                    <input 
+                      type="number"
+                      name="endMin"
+                      onChange={this.handleChange}
+                      value={this.state.endMin}
+                      placeholder="0"
+                    />
+                    <input 
+                      type="number"
+                      name="endSec"
+                      onChange={this.handleChange}
+                      value={this.state.endSec}
+                      placeholder="0"
+                    />
+                  </div>
+                }
 
                 <div className="skip-time">
                   <input 
