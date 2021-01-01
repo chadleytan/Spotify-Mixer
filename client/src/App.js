@@ -55,8 +55,8 @@ class App extends React.Component {
       shouldSkip: false,
       skipMin: 0,
       skipSec: 0,
-      queueStartMin: 0,
-      queueStartSec: 0,
+      endMin: 0,
+      endSec: 0,
       searchTrack: "",
       tracks:[],
       queue:[]
@@ -170,13 +170,13 @@ class App extends React.Component {
           progressMs: this.state.nowPlaying.progressMs + 1000,
           durationMs: this.state.nowPlaying.durationMs
         }
-      }, function() { // skips to next track in queue if "Mixing Mode is on"
-        if (this.state.mixingMode) {
+      }, function() { // skips to next track in queue if "Mixing Mode is on" and there are songs in queue
+        if (this.state.mixingMode && this.state.queue.length > 0 ) {
           if (this.state.nowPlaying.progressMs > this.state.nowPlaying.durationMs - 2000 
             || (this.state.shouldSkip 
-              && this.state.nowPlaying.progressMs > helper.calculateMS(this.state.skipMin, this.state.skipSec))) {
+              && this.state.nowPlaying.progressMs > helper.calculateMS(this.state.queue[0].endMin, this.state.queue[0].endSec))){
               console.log("Skipped");
-            // Issue is that this can skip songs in queue
+            // Issue - Sometimes skips multiple times
             this.playNextQueue();
           }
         }
@@ -324,16 +324,25 @@ class App extends React.Component {
     if(this.state.queue.length !== 0) {
       var play_data = {
         uris: [this.state.queue[0].info.uri],
-        position_ms: helper.calculateMS(this.state.queueStartMin, this.state.queueStartSec)
+        position_ms: helper.calculateMS(this.state.queue[0].startMin, this.state.queue[0].startSec)
       }
       console.log(this.state.queue[0].info.uri);
       console.log(play_data);
       if (this.state.device_id){
         spotifyApi.play(play_data).then(() => {
           // Removes song played from queue
-          self.setState({
-            queue: self.state.queue.slice(1),
-            shouldSkip: false
+          self.setState(prevstate => {
+            const queue = prevstate.queue.slice(1);
+            const shouldSkip = false;
+            const endMin = prevstate.queue[0].endMin;
+            const endSec = prevstate.queue[0].endSec;
+
+            return {
+              queue,
+              shouldSkip,
+              endMin,
+              endSec
+            }
           });
         });
       }
@@ -543,6 +552,27 @@ class App extends React.Component {
                     <p>Track length: {helper.calculateTimeLength(this.state.nowPlaying.durationMs)}</p>
                 </div>
                 
+                <div className="skip-time">
+                  <span>Skip to: </span>
+                  <input 
+                    type="number"
+                    name="skipMin"
+                    onChange={this.handleChange}
+                    value={this.state.skipMin}
+                    placeholder="0"
+                  />
+                  <input 
+                    type="number"
+                    name="skipSec"
+                    onChange={this.handleChange}
+                    value={this.state.skipSec}
+                    placeholder="0"
+                  />
+                  <button onClick={() => this.skipToPosition()}>
+                    Skip
+                  </button>
+                </div>
+
                 {
                   this.state.mixingMode &&
                   <div className="end-time">
@@ -561,50 +591,19 @@ class App extends React.Component {
                       value={this.state.endSec}
                       placeholder="0"
                     />
+                    {
+                      this.state.mixingMode && this.state.queue.length > 0 &&
+                      <button onClick={() => this.toggleAutomaticSkip()}>
+                        Automatic Skip: {this.state.shouldSkip ? <span>On</span> : <span>Off</span>}
+                      </button>
+                    }
                   </div>
                 }
-
-                <div className="skip-time">
-                  <input 
-                    type="number"
-                    name="skipMin"
-                    onChange={this.handleChange}
-                    value={this.state.skipMin}
-                    placeholder="0"
-                  />
-                  <input 
-                    type="number"
-                    name="skipSec"
-                    onChange={this.handleChange}
-                    value={this.state.skipSec}
-                    placeholder="0"
-                  />
-                  <button onClick={() => this.skipToPosition()}>
-                    Skip to Time
-                  </button>
-                  <button onClick={() => this.toggleAutomaticSkip()}>
-                    Automatic Skip: {this.state.shouldSkip ? <span>On</span> : <span>Off</span>}
-                  </button>
-                </div>
 
                 <div className="own-queue">
                   {
                     this.state.queue.length > 0 &&
-                    <div className="queue-start">
-                      <input 
-                        type="number"
-                        name="queueStartMin"
-                        onChange={this.handleChange}
-                        value={this.state.queueStartMin}
-                        placeholder="0"
-                      />
-                      <input 
-                        type="number"
-                        name="queueStartSec"
-                        onChange={this.handleChange}
-                        value={this.state.queueStartSec}
-                        placeholder="0"
-                      />
+                    <div className="queue">
                       <button onClick={() =>this.playNextQueue()}>
                         Play Next in Queue
                       </button>
