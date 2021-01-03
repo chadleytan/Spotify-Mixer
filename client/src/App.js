@@ -68,16 +68,12 @@ class App extends React.Component {
     this.handleStatus = this.handleStatus.bind(this);
     this.getNowPlaying = this.getNowPlaying.bind(this);
     this.refreshPlaying = this.refreshPlaying.bind(this);
-    this.toggleMixingMode = this.toggleMixingMode.bind(this);
     this.progressTime = this.progressTime.bind(this);
     this.queueTrackSpotify = this.queueTrackSpotify.bind(this);
     this.queueTrackApp = this.queueTrackApp.bind(this);
     this.skipToNextTrack = this.skipToNextTrack.bind(this);
     this.skipToPreviousTrack = this.skipToPreviousTrack.bind(this);
-    this.toggleShuffle = this.toggleShuffle.bind(this);
-    this.toggleRepeat = this.toggleRepeat.bind(this);
     this.refreshToken = this.refreshToken.bind(this);
-    this.toggleQueue = this.toggleQueue.bind(this);
     this.playNextQueue = this.playNextQueue.bind(this);
     this.clearQueue = this.clearQueue.bind(this);
   }
@@ -349,6 +345,8 @@ class App extends React.Component {
       else {
         console.log("Need to get device id first. Make sure Spotify device is currently playing music");
       }
+    } else {
+      console.log("No songs in queue");
     }
   }
 
@@ -477,6 +475,7 @@ class App extends React.Component {
       <TrackItem 
         key={track.id} 
         trackInfo={track.trackInfo} 
+        mixingMode={this.state.mixingMode}
         handlePlay={this.handlePlay}
         queueTrackApp={this.queueTrackApp}
         queueTrackSpotify={this.queueTrackSpotify}
@@ -497,61 +496,58 @@ class App extends React.Component {
       <div className="App">
         {
           !this.state.loggedIn &&
-          <a href='http://localhost:8888'>
-            Login to Spotify
-          </a>
+          <div>
+            <a href='http://localhost:8888'>
+              Login to Spotify
+            </a>
+          </div>
         }
         { 
           this.state.loggedIn &&
-          <div>
-            <button onClick={() => this.refreshToken()}>Refresh Token</button>
-            <button onClick={() => this.toggleMixingMode()}>
-              Mixing Mode: {this.state.mixingMode ? <span>ON</span> : <span>OFF</span>}
-            </button>
-          </div>
-        }
-        <div>
-          {
-            this.state.loggedIn &&
+          <div className="app">
             <div>
-              <div className="now-playing">
-                Now Playing: { this.state.nowPlaying.name } - {this.state.nowPlaying.artist}
-              </div>
-              <div>
+              <button onClick={() => this.refreshToken()}>Refresh Token</button>
+              <button onClick={() => this.toggleMixingMode()}>
+                Mixing Mode: {this.state.mixingMode ? <span>ON</span> : <span>OFF</span>}
+              </button>
+            </div>
+            <div className="now-playing">
+              <div className="now-playing-display">
+                <p>
+                  Now Playing: { this.state.nowPlaying.name } - {this.state.nowPlaying.artist} 
+                </p>
                 <img className={"album-art " + (this.state.nowPlaying.isPlaying ? "album-playing" : null)} 
-                src={this.state.nowPlaying.albumArt} alt='Album'
+                  src={this.state.nowPlaying.albumArt} alt='Album'
                 />
               </div>
+              <div className="playback-controls">
+                <button onClick={() => this.skipToPreviousTrack()}>
+                  Prev
+                </button>
+                <button onClick={() => this.handleStatus()}>
+                  {
+                    this.state.nowPlaying.isPlaying ? <span>Pause</span> : <span>Resume</span>
+                  } 
+                </button>
+                <button onClick={() => this.skipToNextTrack()}>
+                  Next
+                </button>
+                <button onClick={() => this.toggleShuffle()}>
+                  Shuffle: {global.shuffleOptions[this.state.shuffle] ? <span>on</span> : <span>off</span>}
+                </button>
+                <button onClick={() => this.toggleRepeat()}>
+                  Repeat: {global.repeatOptions[this.state.repeat]}
+                </button>
+              </div>
+              <div className="track-progress">
+                <p>Current Time: {helper.calculateTimeLength(this.state.nowPlaying.progressMs)}</p>
+                <div>
+                  <ProgressBar percentage={(this.state.nowPlaying.progressMs/this.state.nowPlaying.durationMs * 100)}/>
+                </div>
+                <p>Track length: {helper.calculateTimeLength(this.state.nowPlaying.durationMs)}</p>
+              </div>
 
-              <div className="container">
-                <div className="play-status">
-                  <button onClick={() => this.skipToPreviousTrack()}>
-                    Prev
-                  </button>
-                  <button onClick={() => this.handleStatus()}>
-                    {
-                      this.state.nowPlaying.isPlaying ? <span>Pause</span> : <span>Resume</span>
-                    } 
-                  </button>
-                  <button onClick={() => this.skipToNextTrack()}>
-                    Next
-                  </button>
-                  <button onClick={() => this.toggleShuffle()}>
-                    Shuffle: {global.shuffleOptions[this.state.shuffle] ? <span>on</span> : <span>off</span>}
-                  </button>
-                  <button onClick={() => this.toggleRepeat()}>
-                    Repeat: {global.repeatOptions[this.state.repeat]}
-                  </button>
-                </div>
-                
-                <div className="track-progress">
-                    <p>Current Time: {helper.calculateTimeLength(this.state.nowPlaying.progressMs)}</p>
-                    <div>
-                      <ProgressBar percentage={(this.state.nowPlaying.progressMs/this.state.nowPlaying.durationMs * 100)}/>
-                    </div>
-                    <p>Track length: {helper.calculateTimeLength(this.state.nowPlaying.durationMs)}</p>
-                </div>
-                
+              <div className="mixing-controls">
                 <div className="skip-time">
                   <span>Skip to: </span>
                   <input 
@@ -599,54 +595,54 @@ class App extends React.Component {
                     }
                   </div>
                 }
-
-                <div className="own-queue">
-                  {
-                    this.state.queue.length > 0 &&
-                    <div className="queue">
-                      <button onClick={() =>this.playNextQueue()}>
-                        Play Next in Queue
-                      </button>
-                      <button onClick={() => this.clearQueue()}>
-                        Clear Queue
-                      </button>
-                    </div>
-                  }
-                  <button onClick={() => this.toggleQueue()}>
-                    {this.state.showOwnQueue ? <span>Hide</span> : <span>Show</span>} Own Queue
-                  </button>
-                  {
-                    this.state.showOwnQueue &&
-                    <div className="queue-list">
-                      <h3>{this.state.queue.length > 0 ? <span>Queued Tracks:</span> : <span>No Tracks In Queue</span>}</h3>
-                      {queueItems}
-                    </div>
-                  }
-                </div>
-                
-                <div className="search-track">
-                  <input 
-                    type="text"
-                    name="searchTrack"
-                    onChange={this.handleChange}
-                    value={this.state.searchTrack}
-                    placeholder="Search Track"
-                  />
-                  <button onClick={() => this.searchTrack()}>
-                    Search Track
-                  </button>
-                </div>
-                {
-                  this.state.tracks.length > 0 &&
-                <div className="track-list">
-                  <h3>Search Results:</h3>
-                  {trackItems}
-                </div>
-                }
               </div>
             </div>
-          }
-        </div>
+            
+            <div className="own-queue">
+              {
+                this.state.queue.length > 0 &&
+                <div className="queue">
+                  <button onClick={() =>this.playNextQueue()}>
+                    Play Next in Queue
+                  </button>
+                  <button onClick={() => this.clearQueue()}>
+                    Clear Queue
+                  </button>
+                </div>
+              }
+              <button onClick={() => this.toggleQueue()}>
+                {this.state.showOwnQueue ? <span>Hide</span> : <span>Show</span>} Own Queue
+              </button>
+              {
+                this.state.showOwnQueue &&
+                <div className="queue-list">
+                  <h3>{this.state.queue.length > 0 ? <span>Queued Tracks:</span> : <span>No Tracks In Queue</span>}</h3>
+                  {queueItems}
+                </div>
+              }
+            </div>
+            
+            <div className="search-track">
+              <input 
+                type="text"
+                name="searchTrack"
+                onChange={this.handleChange}
+                value={this.state.searchTrack}
+                placeholder="Search Track"
+              />
+              <button onClick={() => this.searchTrack()}>
+                Search Track
+              </button>
+              {
+              this.state.tracks.length > 0 &&
+              <div className="track-list">
+                <h3>Search Results:</h3>
+                {trackItems}
+              </div>
+              }
+            </div>
+          </div>
+        }
       </div>
     );
   }
