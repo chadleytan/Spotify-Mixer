@@ -350,6 +350,13 @@ class App extends React.Component {
     }
   }
 
+  clearSearch() {
+    this.setState({
+      tracks: [],
+      searchTrack: ""
+    })
+  }
+
   clearQueue() {
     this.setState({
       queue: []
@@ -505,141 +512,149 @@ class App extends React.Component {
         { 
           this.state.loggedIn &&
           <div className="app">
-            <div>
+            <div className="app-controls">
               <button onClick={() => this.refreshToken()}>Refresh Token</button>
               <button onClick={() => this.toggleMixingMode()}>
                 Mixing Mode: {this.state.mixingMode ? <span>ON</span> : <span>OFF</span>}
               </button>
             </div>
-            <div className="now-playing">
-              <div className="now-playing-display">
-                <p>
-                  Now Playing: { this.state.nowPlaying.name } - {this.state.nowPlaying.artist} 
-                </p>
-                <img className={"album-art " + (this.state.nowPlaying.isPlaying ? "album-playing" : null)} 
-                  src={this.state.nowPlaying.albumArt} alt='Album'
-                />
-              </div>
-              <div className="playback-controls">
-                <button onClick={() => this.skipToPreviousTrack()}>
-                  Prev
-                </button>
-                <button onClick={() => this.handleStatus()}>
-                  {
-                    this.state.nowPlaying.isPlaying ? <span>Pause</span> : <span>Resume</span>
-                  } 
-                </button>
-                <button onClick={() => this.skipToNextTrack()}>
-                  Next
-                </button>
-                <button onClick={() => this.toggleShuffle()}>
-                  Shuffle: {global.shuffleOptions[this.state.shuffle] ? <span>on</span> : <span>off</span>}
-                </button>
-                <button onClick={() => this.toggleRepeat()}>
-                  Repeat: {global.repeatOptions[this.state.repeat]}
-                </button>
-              </div>
-              <div className="track-progress">
-                <p>Current Time: {helper.calculateTimeLength(this.state.nowPlaying.progressMs)}</p>
-                <div>
-                  <ProgressBar percentage={(this.state.nowPlaying.progressMs/this.state.nowPlaying.durationMs * 100)}/>
-                </div>
-                <p>Track length: {helper.calculateTimeLength(this.state.nowPlaying.durationMs)}</p>
-              </div>
-
-              <div className="mixing-controls">
-                <div className="skip-time">
-                  <span>Skip to: </span>
-                  <input 
-                    type="number"
-                    name="skipMin"
-                    onChange={this.handleChange}
-                    value={this.state.skipMin}
-                    placeholder="0"
-                  />
-                  <input 
-                    type="number"
-                    name="skipSec"
-                    onChange={this.handleChange}
-                    value={this.state.skipSec}
-                    placeholder="0"
-                  />
-                  <button onClick={() => this.skipToPosition()}>
-                    Skip
-                  </button>
-                </div>
-
-                {
-                  this.state.mixingMode &&
-                  <div className="end-time">
-                    <span>Current Track End Time: </span>
-                    <input 
-                      type="number"
-                      name="endMin"
-                      onChange={this.handleChange}
-                      value={this.state.endMin}
-                      placeholder="0"
+            
+            <div className="application-main">
+              <div className="playback-main float-container">
+                <div className="now-playing float-child">
+                  <div className="now-playing-display center">
+                    <p>
+                      Now Playing: { this.state.nowPlaying.name } - {this.state.nowPlaying.artist} 
+                    </p>
+                    <img className={"album-art " + (this.state.nowPlaying.isPlaying ? "album-playing" : null)} 
+                      src={this.state.nowPlaying.albumArt} alt='Album'
                     />
-                    <input 
-                      type="number"
-                      name="endSec"
-                      onChange={this.handleChange}
-                      value={this.state.endSec}
-                      placeholder="0"
+                  </div>
+                  <div className="playback-controls center">
+                    <button onClick={() => this.toggleShuffle()}>
+                      Shuffle: {global.shuffleOptions[this.state.shuffle] ? <span>on</span> : <span>off</span>}
+                    </button>
+                    <button onClick={() => this.skipToPreviousTrack()}>
+                      Prev
+                    </button>
+                    <button onClick={() => this.handleStatus()}>
+                      {
+                        this.state.nowPlaying.isPlaying ? <span>Pause</span> : <span>Resume</span>
+                      } 
+                    </button>
+                    <button onClick={() => this.skipToNextTrack()}>
+                      Next
+                    </button>
+                    <button onClick={() => this.toggleRepeat()}>
+                      Repeat: {global.repeatOptions[this.state.repeat]}
+                    </button>
+                  </div>
+                  <div className="track-progress">
+                    <ProgressBar 
+                      percentage={(this.state.nowPlaying.progressMs/this.state.nowPlaying.durationMs * 100)}
+                      progressTime={helper.calculateTimeLength(this.state.nowPlaying.progressMs)}
+                      durationTime={helper.calculateTimeLength(this.state.nowPlaying.durationMs)}
                     />
-                    {
-                      this.state.mixingMode && this.state.queue.length > 0 &&
-                      <button onClick={() => this.toggleAutomaticSkip()}>
-                        Automatic Skip: {this.state.shouldSkip ? <span>On</span> : <span>Off</span>}
+                  </div>
+
+                  <div className="mixing-controls">
+                    <div className="skip-time">
+                      <span>Skip to: </span>
+                      <input 
+                        type="number"
+                        name="skipMin"
+                        onChange={this.handleChange}
+                        value={this.state.skipMin}
+                        placeholder="0"
+                      />
+                      <input 
+                        type="number"
+                        name="skipSec"
+                        onChange={this.handleChange}
+                        value={this.state.skipSec}
+                        placeholder="0"
+                      />
+                      <button onClick={() => this.skipToPosition()}>
+                        Skip
                       </button>
+                    </div>
+
+                    {
+                      this.state.mixingMode &&
+                      <div className="end-time">
+                        <span>Current Track End Time: </span>
+                        <input 
+                          type="number"
+                          name="endMin"
+                          onChange={this.handleChange}
+                          value={this.state.endMin}
+                          placeholder="0"
+                        />
+                        <input 
+                          type="number"
+                          name="endSec"
+                          onChange={this.handleChange}
+                          value={this.state.endSec}
+                          placeholder="0"
+                        />
+                        {
+                          this.state.mixingMode && this.state.queue.length > 0 &&
+                          <button onClick={() => this.toggleAutomaticSkip()}>
+                            Automatic Skip: {this.state.shouldSkip ? <span>On</span> : <span>Off</span>}
+                          </button>
+                        }
+                      </div>
                     }
                   </div>
+                </div>
+                
+                <div className="own-queue float-child">
+                  {
+                    this.state.queue.length > 0 &&
+                    <div className="queue">
+                      <button onClick={() =>this.playNextQueue()}>
+                        Play Next in Queue
+                      </button>
+                      <button onClick={() => this.clearQueue()}>
+                        Clear Queue
+                      </button>
+                    </div>
+                  }
+                  <button onClick={() => this.toggleQueue()}>
+                    {this.state.showOwnQueue ? <span>Hide</span> : <span>Show</span>} Queue
+                  </button>
+                  {
+                    this.state.showOwnQueue &&
+                    <div className="queue-list">
+                      <h3>{this.state.queue.length > 0 ? <span>Queued Tracks:</span> : <span>No Tracks In Queue</span>}</h3>
+                      {queueItems}
+                    </div>
+                  }
+                </div>
+              </div>
+              
+              <div className="search-track">
+                <input 
+                  type="text"
+                  name="searchTrack"
+                  onChange={this.handleChange}
+                  value={this.state.searchTrack}
+                  placeholder="Search Track"
+                />
+                <button onClick={() => this.searchTrack()}>
+                  Search Track
+                </button>
+                <button onClick={() => this.clearSearch()}>
+                  Clear Search
+                </button>
+                {
+                this.state.tracks.length > 0 &&
+                <div className="track-list">
+                  <h3>Search Results:</h3>
+                  {trackItems}
+                </div>
                 }
               </div>
-            </div>
-            
-            <div className="own-queue">
-              {
-                this.state.queue.length > 0 &&
-                <div className="queue">
-                  <button onClick={() =>this.playNextQueue()}>
-                    Play Next in Queue
-                  </button>
-                  <button onClick={() => this.clearQueue()}>
-                    Clear Queue
-                  </button>
-                </div>
-              }
-              <button onClick={() => this.toggleQueue()}>
-                {this.state.showOwnQueue ? <span>Hide</span> : <span>Show</span>} Own Queue
-              </button>
-              {
-                this.state.showOwnQueue &&
-                <div className="queue-list">
-                  <h3>{this.state.queue.length > 0 ? <span>Queued Tracks:</span> : <span>No Tracks In Queue</span>}</h3>
-                  {queueItems}
-                </div>
-              }
-            </div>
-            
-            <div className="search-track">
-              <input 
-                type="text"
-                name="searchTrack"
-                onChange={this.handleChange}
-                value={this.state.searchTrack}
-                placeholder="Search Track"
-              />
-              <button onClick={() => this.searchTrack()}>
-                Search Track
-              </button>
-              {
-              this.state.tracks.length > 0 &&
-              <div className="track-list">
-                <h3>Search Results:</h3>
-                {trackItems}
-              </div>
-              }
             </div>
           </div>
         }

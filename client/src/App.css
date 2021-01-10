@@ -1,3 +1,7 @@
+.center {
+  text-align: center;
+}
+
 .progress-bar {
   position: relative;
   height: 20px;
@@ -21,6 +25,22 @@
 
 .album-playing {
   animation: rotation 6s infinite linear;
+}
+
+.playback-main.float-container {
+  border: 3px solid black;
+  display: inline-flex;
+  width: 100%;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.float-child {
+  /* width: 40%;  */
+  height: 400px;
+  display: "flex";
+  flex: 1;
+  border: 1px solid green;
 }
 
 @keyframes rotation {
