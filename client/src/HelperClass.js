@@ -1,7 +1,12 @@
 class HelperClass {
 
-    calculateTimeLength(number) {
-        return '' + Math.floor(number/1000.0/60) + ':' + ( '0' + (Math.round((number / 1000) % 60))).slice(-2);
+    calculateTimeLength(s) {
+        var ms = s % 1000;
+        s = (s - ms) / 1000;
+        var secs = s % 60;
+        s = (s - secs) / 60;
+        var mins = s % 60;
+        return mins + ':' + ( '0' + secs).slice(-2);
     }
 
     calculateMS(minutes, seconds) {
