@@ -1,4 +1,8 @@
 import React from "react";
+import HelperClass from "./HelperClass.js";
+import './QueueItem.css';
+
+const helper = new HelperClass();
 
 function QueueItem(props) {
     return (
@@ -16,6 +20,8 @@ function QueueItem(props) {
                             onChange={(e) => props.handleChange(e, props.id)}
                             value={props.trackInfo.startMin}
                             placeholder="0"
+                            min="0"
+                            max={helper.calculateMin(props.trackInfo.info.duration_ms)}
                         />
                         <input 
                             type="number"
@@ -23,6 +29,8 @@ function QueueItem(props) {
                             onChange={(e) => props.handleChange(e, props.id)}
                             value={props.trackInfo.startSec}
                             placeholder="0"
+                            min="0"
+                            max={helper.calculateSec(props.trackInfo.info.duration_ms)}
                         />
                     </div>
                     <div className="end-time">
@@ -33,6 +41,8 @@ function QueueItem(props) {
                             onChange={(e) => props.handleChange(e, props.id)}
                             value={props.trackInfo.endMin}
                             placeholder="0"
+                            min="0"
+                            max={helper.calculateMin(props.trackInfo.info.duration_ms)}
                         />
                         <input 
                             type="number"
@@ -40,6 +50,8 @@ function QueueItem(props) {
                             onChange={(e) => props.handleChange(e, props.id)}
                             value={props.trackInfo.endSec}
                             placeholder="0"
+                            min="0"
+                            max={helper.calculateSec(props.trackInfo.info.duration_ms)}
                         />
                     </div>
                 </div>

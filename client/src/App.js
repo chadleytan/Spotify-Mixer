@@ -42,7 +42,7 @@ class App extends React.Component {
       spotifySDKReady: false,
       loggedIn: access_token ? true : false,
       mixingMode: true,
-      showOwnQueue: false,
+      showOwnQueue: true,
       nowPlaying: {
         name: 'Not Checked', 
         albumArt:'', 
@@ -146,7 +146,7 @@ class App extends React.Component {
 
   // Checks what is currently playing every x seconds
   refreshPlaying() {
-    const x = 10;
+    const x = 5;
 
     this.getNowPlaying();
     setTimeout(this.refreshPlaying, x*1000);
@@ -296,8 +296,8 @@ class App extends React.Component {
           info: track_info,
           startMin: 0,
           startSec: 0,
-          endMin: 0,
-          endSec: 0
+          endMin: helper.calculateMin(track_info.duration_ms),
+          endSec: helper.calculateSec(track_info.duration_ms)
         }
       ]
     }, function(){
@@ -339,6 +339,10 @@ class App extends React.Component {
               endMin,
               endSec
             }
+          }, function() {
+            setTimeout(function() {
+              self.getNowPlaying();
+            }, 500)
           });
         });
       }
@@ -514,6 +518,7 @@ class App extends React.Component {
           <div className="app">
             <div className="app-controls">
               <button onClick={() => this.refreshToken()}>Refresh Token</button>
+              <button onClick={() => this.getNowPlaying()}>Get Status</button>
               <button onClick={() => this.toggleMixingMode()}>
                 Mixing Mode: {this.state.mixingMode ? <span>ON</span> : <span>OFF</span>}
               </button>
@@ -582,7 +587,7 @@ class App extends React.Component {
                     {
                       this.state.mixingMode &&
                       <div className="end-time">
-                        <span>Current Track End Time: </span>
+                        <span>End Time: </span>
                         <input 
                           type="number"
                           name="endMin"
