@@ -549,7 +549,7 @@ class App extends React.Component {
                       Repeat: {global.repeatOptions[this.state.repeat]}
                     </button>
                   </div>
-                  <div className="track-progress">
+                  <div className="track-progress center">
                     <ProgressBar 
                       percentage={(this.state.nowPlaying.progressMs/this.state.nowPlaying.durationMs * 100)}
                       progressTime={helper.calculateTimeLength(this.state.nowPlaying.progressMs)}
@@ -609,6 +609,9 @@ class App extends React.Component {
                 </div>
                 
                 <div className="own-queue float-child">
+                  <button onClick={() => this.toggleQueue()}>
+                    {this.state.showOwnQueue ? <span>Hide</span> : <span>Show</span>} Queue
+                  </button>
                   {
                     this.state.queue.length > 0 &&
                     <div className="queue">
@@ -620,14 +623,13 @@ class App extends React.Component {
                       </button>
                     </div>
                   }
-                  <button onClick={() => this.toggleQueue()}>
-                    {this.state.showOwnQueue ? <span>Hide</span> : <span>Show</span>} Queue
-                  </button>
                   {
                     this.state.showOwnQueue &&
-                    <div className="queue-list">
+                    <div>
                       <h3>{this.state.queue.length > 0 ? <span>Queued Tracks:</span> : <span>No Tracks In Queue</span>}</h3>
-                      {queueItems}
+                      <div className="queue-list">
+                        {queueItems}
+                      </div>
                     </div>
                   }
                 </div>

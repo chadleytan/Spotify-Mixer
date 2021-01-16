@@ -27,16 +27,30 @@
   animation: rotation 6s infinite linear;
 }
 
+.now-playing,
+.own-queue {
+  padding: 1em;
+} 
+
+.queue-list {
+  display: flex;
+  margin: 4px, 4px;  
+  /* padding: 4px;   */
+  background-color: #08c708;  
+  width: 450px;  
+  overflow: auto;  
+}
+
 .playback-main.float-container {
   border: 3px solid black;
   display: inline-flex;
-  width: 100%;
+  width: 90%;
+  margin: 1em;
   padding: 20px;
   margin-bottom: 20px;
 }
 
 .float-child {
-  /* width: 40%;  */
   height: 400px;
   display: "flex";
   flex: 1;
