@@ -9,6 +9,7 @@ function QueueItem(props) {
         <div className="queue-item">
             <img src={props.trackInfo.info.album.images[0].url} style={{ height: 100 }} alt='Album'/>
             <p>{props.trackInfo.info.name} - {props.trackInfo.info.artists[0].name}</p>
+            <p>Track Length: {helper.calculateTimeLength(props.trackInfo.info.duration_ms)}</p>
             {
                 props.mixingMode &&
                 <div className="control-time">
@@ -22,7 +23,7 @@ function QueueItem(props) {
                             placeholder="0"
                             min="0"
                             max={helper.calculateMin(props.trackInfo.info.duration_ms)}
-                        />
+                        />:
                         <input 
                             type="number"
                             name="startSec"
@@ -30,7 +31,7 @@ function QueueItem(props) {
                             value={props.trackInfo.startSec}
                             placeholder="0"
                             min="0"
-                            max={helper.calculateSec(props.trackInfo.info.duration_ms)}
+                            max="59"
                         />
                     </div>
                     <div className="end-time">
@@ -43,7 +44,7 @@ function QueueItem(props) {
                             placeholder="0"
                             min="0"
                             max={helper.calculateMin(props.trackInfo.info.duration_ms)}
-                        />
+                        />:
                         <input 
                             type="number"
                             name="endSec"
@@ -51,11 +52,14 @@ function QueueItem(props) {
                             value={props.trackInfo.endSec}
                             placeholder="0"
                             min="0"
-                            max={helper.calculateSec(props.trackInfo.info.duration_ms)}
+                            max="59"
                         />
                     </div>
                 </div>
             }
+            <button onClick={props.handleDelete.bind(this, props.id)}>
+                Remove
+            </button>
         </div>
     );
 }

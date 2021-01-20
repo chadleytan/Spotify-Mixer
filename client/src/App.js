@@ -76,6 +76,7 @@ class App extends React.Component {
     this.refreshToken = this.refreshToken.bind(this);
     this.playNextQueue = this.playNextQueue.bind(this);
     this.clearQueue = this.clearQueue.bind(this);
+    this.deleteTrackQueue = this.deleteTrackQueue.bind(this);
   }
 
   componentDidMount(){
@@ -354,6 +355,14 @@ class App extends React.Component {
     }
   }
 
+  deleteTrackQueue(id) {
+    this.setState(prevState => ({
+      queue: prevState.queue.filter(el => el.id != id)
+    }), function() {
+      console.log("Removed track with id: " + id);
+    });
+  }
+
   clearSearch() {
     this.setState({
       tracks: [],
@@ -500,6 +509,7 @@ class App extends React.Component {
         trackInfo={track}
         mixingMode={this.state.mixingMode}
         handleChange={(e, val) => this.handleQueueChange(e, val)}
+        handleDelete={this.deleteTrackQueue}
       />
     );
 
@@ -571,13 +581,18 @@ class App extends React.Component {
                         onChange={this.handleChange}
                         value={this.state.skipMin}
                         placeholder="0"
-                      />
+                        min="0"
+                        max={helper.calculateMin(this.state.nowPlaying.durationMs)}
+                      />:
                       <input 
                         type="number"
                         name="skipSec"
                         onChange={this.handleChange}
                         value={this.state.skipSec}
                         placeholder="0"
+                        min="0"
+                        max={helper.calculateSec(this.state.nowPlaying.durationMs)}
+                        
                       />
                       <button onClick={() => this.skipToPosition()}>
                         Skip
@@ -594,13 +609,17 @@ class App extends React.Component {
                           onChange={this.handleChange}
                           value={this.state.endMin}
                           placeholder="0"
-                        />
+                          min="0"
+                          max={helper.calculateMin(this.state.nowPlaying.durationMs)}
+                        />:
                         <input 
                           type="number"
                           name="endSec"
                           onChange={this.handleChange}
                           value={this.state.endSec}
                           placeholder="0"
+                          min="0"
+                          max="59"
                         />
                         {
                           this.state.mixingMode && this.state.queue.length > 0 &&
