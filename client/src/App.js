@@ -357,7 +357,7 @@ class App extends React.Component {
 
   deleteTrackQueue(id) {
     this.setState(prevState => ({
-      queue: prevState.queue.filter(el => el.id != id)
+      queue: prevState.queue.filter(el => el.id !== id)
     }), function() {
       console.log("Removed track with id: " + id);
     });
@@ -469,10 +469,11 @@ class App extends React.Component {
   searchTrack() {
     console.log("trying to search");
     var self = this;
+    var limit = 12;
     if (this.searchTrack !== "")
     {
       $.ajax({
-          url: "https://api.spotify.com/v1/search?q=" + this.state.searchTrack + "&type=track&market=US&limit=10",
+          url: "https://api.spotify.com/v1/search?q=" + this.state.searchTrack + "&type=track&market=US&limit=" + limit,
           type: "GET",
           headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + spotifyApi.getAccessToken()},
           success: function(data) {
