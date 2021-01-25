@@ -17,13 +17,34 @@
   min-width: 1070px;
 }
 
+/* App Controls */
+.app-controls {
+  padding: 0.5em;
+  background-color: rgb(2, 49, 25);
+}
+
 /* Progress Bar */
+.track-progress {
+  align-items: center;
+  display: flex;
+  margin: 3px;
+}
+
 .progress-bar {
   position: relative;
   height: 20px;
   width: 350px;
   border-radius: 50px;
   border: 1px solid #333;
+}
+
+.progress {
+  width: 100%;
+  align-items: center;
+  margin: 3px;
+  display: flex;
+  justify-content: space-around;
+  padding: 0 25px;
 }
 
 .filler {
@@ -56,11 +77,11 @@
 
 /* Queue */
 .queue-list {
-  display: flex;
-  margin: 4px, 4px;  
+  display: flex;  
   /* padding: 4px;   */
   background-color: #08c708;  
-  width: 450px;  
+  width: 500px;
+  margin: 0.5em;  
   overflow: auto;  
 }
 

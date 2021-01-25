@@ -565,7 +565,7 @@ class App extends React.Component {
                       Repeat: {global.repeatOptions[this.state.repeat]}
                     </button>
                   </div>
-                  <div className="track-progress center">
+                  <div className="track-progress">
                     <ProgressBar 
                       percentage={(this.state.nowPlaying.progressMs/this.state.nowPlaying.durationMs * 100)}
                       progressTime={helper.calculateTimeLength(this.state.nowPlaying.progressMs)}
@@ -625,7 +625,7 @@ class App extends React.Component {
                         {
                           this.state.mixingMode && this.state.queue.length > 0 &&
                           <button onClick={() => this.toggleAutomaticSkip()}>
-                            Automatic Skip: {this.state.shouldSkip ? <span>On</span> : <span>Off</span>}
+                            Ready To Skip: {this.state.shouldSkip ? <span>YES</span> : <span>NO</span>}
                           </button>
                         }
                       </div>
