@@ -7,8 +7,12 @@ const helper = new HelperClass();
 function QueueItem(props) {
     return (
         <div className="queue-item">
-            <img src={props.trackInfo.info.album.images[0].url} style={{ height: 100 }} alt='Album'/>
-            <p>{props.trackInfo.info.name} - {props.trackInfo.info.artists[0].name}</p>
+            <div className="center" >
+                <img src={props.trackInfo.info.album.images[0].url} style={{ height: 100 }} alt='Album'/>
+            </div>
+            <div className="info">
+                <p>{props.trackInfo.info.name} - {props.trackInfo.info.artists[0].name}</p>
+            </div>
             <p>Track Length: {helper.calculateTimeLength(props.trackInfo.info.duration_ms)}</p>
             {
                 props.mixingMode &&

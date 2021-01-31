@@ -209,7 +209,7 @@ class App extends React.Component {
     });
   }
 
-  // Get and set new access token
+  // Get and set new access token. Also gets currently now playing
   refreshToken() {
     console.log("Refresh Token")
     $.ajax({
@@ -220,6 +220,8 @@ class App extends React.Component {
     }).then((response) => {
       spotifyApi.setAccessToken(response.access_token);
       console.log(response);
+    }).then(()=> {
+      this.getNowPlaying();
     })
   }
 
@@ -400,7 +402,7 @@ class App extends React.Component {
 
   // Resume/Pause
   handleStatus() {
-    if (this.state.device_id) {
+    if (this.state.device_id && this.state.nowPlaying.name) {
       this.setState({
         nowPlaying: {
           name: this.state.nowPlaying.name,
@@ -528,11 +530,11 @@ class App extends React.Component {
           this.state.loggedIn &&
           <div className="app">
             <div className="app-controls">
-              <button onClick={() => this.refreshToken()}>Refresh Token</button>
-              <button onClick={() => this.getNowPlaying()}>Get Status</button>
-              <button onClick={() => this.toggleMixingMode()}>
+              <button onClick={() => this.refreshToken()}>Refresh</button>
+              {/* <button onClick={() => this.getNowPlaying()}>Get Status</button> */}
+              {/* <button onClick={() => this.toggleMixingMode()}>
                 Mixing Mode: {this.state.mixingMode ? <span>ON</span> : <span>OFF</span>}
-              </button>
+              </button> */}
             </div>
             
             <div className="application-main">
