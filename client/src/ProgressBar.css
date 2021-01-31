@@ -1,0 +1,9 @@
+.progress {
+    display: flex;
+    text-align: center;
+    position: relative;
+}
+
+.time {
+    padding: 0 5px 0 5px;
+}

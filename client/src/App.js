@@ -42,7 +42,7 @@ class App extends React.Component {
       spotifySDKReady: false,
       loggedIn: access_token ? true : false,
       mixingMode: true,
-      showOwnQueue: false,
+      showOwnQueue: true,
       nowPlaying: {
         name: 'Not Checked', 
         albumArt:'', 
@@ -76,6 +76,7 @@ class App extends React.Component {
     this.refreshToken = this.refreshToken.bind(this);
     this.playNextQueue = this.playNextQueue.bind(this);
     this.clearQueue = this.clearQueue.bind(this);
+    this.deleteTrackQueue = this.deleteTrackQueue.bind(this);
   }
 
   componentDidMount(){
@@ -146,7 +147,7 @@ class App extends React.Component {
 
   // Checks what is currently playing every x seconds
   refreshPlaying() {
-    const x = 10;
+    const x = 5;
 
     this.getNowPlaying();
     setTimeout(this.refreshPlaying, x*1000);
@@ -208,7 +209,7 @@ class App extends React.Component {
     });
   }
 
-  // Get and set new access token
+  // Get and set new access token. Also gets currently now playing
   refreshToken() {
     console.log("Refresh Token")
     $.ajax({
@@ -219,6 +220,8 @@ class App extends React.Component {
     }).then((response) => {
       spotifyApi.setAccessToken(response.access_token);
       console.log(response);
+    }).then(()=> {
+      this.getNowPlaying();
     })
   }
 
@@ -296,8 +299,8 @@ class App extends React.Component {
           info: track_info,
           startMin: 0,
           startSec: 0,
-          endMin: 0,
-          endSec: 0
+          endMin: helper.calculateMin(track_info.duration_ms),
+          endSec: helper.calculateSec(track_info.duration_ms)
         }
       ]
     }, function(){
@@ -339,6 +342,10 @@ class App extends React.Component {
               endMin,
               endSec
             }
+          }, function() {
+            setTimeout(function() {
+              self.getNowPlaying();
+            }, 500)
           });
         });
       }
@@ -348,6 +355,14 @@ class App extends React.Component {
     } else {
       console.log("No songs in queue");
     }
+  }
+
+  deleteTrackQueue(id) {
+    this.setState(prevState => ({
+      queue: prevState.queue.filter(el => el.id !== id)
+    }), function() {
+      console.log("Removed track with id: " + id);
+    });
   }
 
   clearSearch() {
@@ -387,7 +402,7 @@ class App extends React.Component {
 
   // Resume/Pause
   handleStatus() {
-    if (this.state.device_id) {
+    if (this.state.device_id && this.state.nowPlaying.name) {
       this.setState({
         nowPlaying: {
           name: this.state.nowPlaying.name,
@@ -456,10 +471,11 @@ class App extends React.Component {
   searchTrack() {
     console.log("trying to search");
     var self = this;
+    var limit = 12;
     if (this.searchTrack !== "")
     {
       $.ajax({
-          url: "https://api.spotify.com/v1/search?q=" + this.state.searchTrack + "&type=track&market=US&limit=10",
+          url: "https://api.spotify.com/v1/search?q=" + this.state.searchTrack + "&type=track&market=US&limit=" + limit,
           type: "GET",
           headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + spotifyApi.getAccessToken()},
           success: function(data) {
@@ -496,6 +512,7 @@ class App extends React.Component {
         trackInfo={track}
         mixingMode={this.state.mixingMode}
         handleChange={(e, val) => this.handleQueueChange(e, val)}
+        handleDelete={this.deleteTrackQueue}
       />
     );
 
@@ -513,10 +530,11 @@ class App extends React.Component {
           this.state.loggedIn &&
           <div className="app">
             <div className="app-controls">
-              <button onClick={() => this.refreshToken()}>Refresh Token</button>
-              <button onClick={() => this.toggleMixingMode()}>
+              <button onClick={() => this.refreshToken()}>Refresh</button>
+              {/* <button onClick={() => this.getNowPlaying()}>Get Status</button> */}
+              {/* <button onClick={() => this.toggleMixingMode()}>
                 Mixing Mode: {this.state.mixingMode ? <span>ON</span> : <span>OFF</span>}
-              </button>
+              </button> */}
             </div>
             
             <div className="application-main">
@@ -549,7 +567,7 @@ class App extends React.Component {
                       Repeat: {global.repeatOptions[this.state.repeat]}
                     </button>
                   </div>
-                  <div className="track-progress center">
+                  <div className="track-progress">
                     <ProgressBar 
                       percentage={(this.state.nowPlaying.progressMs/this.state.nowPlaying.durationMs * 100)}
                       progressTime={helper.calculateTimeLength(this.state.nowPlaying.progressMs)}
@@ -566,13 +584,18 @@ class App extends React.Component {
                         onChange={this.handleChange}
                         value={this.state.skipMin}
                         placeholder="0"
-                      />
+                        min="0"
+                        max={helper.calculateMin(this.state.nowPlaying.durationMs)}
+                      />:
                       <input 
                         type="number"
                         name="skipSec"
                         onChange={this.handleChange}
                         value={this.state.skipSec}
                         placeholder="0"
+                        min="0"
+                        max={helper.calculateSec(this.state.nowPlaying.durationMs)}
+                        
                       />
                       <button onClick={() => this.skipToPosition()}>
                         Skip
@@ -582,25 +605,29 @@ class App extends React.Component {
                     {
                       this.state.mixingMode &&
                       <div className="end-time">
-                        <span>Current Track End Time: </span>
+                        <span>End Time: </span>
                         <input 
                           type="number"
                           name="endMin"
                           onChange={this.handleChange}
                           value={this.state.endMin}
                           placeholder="0"
-                        />
+                          min="0"
+                          max={helper.calculateMin(this.state.nowPlaying.durationMs)}
+                        />:
                         <input 
                           type="number"
                           name="endSec"
                           onChange={this.handleChange}
                           value={this.state.endSec}
                           placeholder="0"
+                          min="0"
+                          max="59"
                         />
                         {
                           this.state.mixingMode && this.state.queue.length > 0 &&
                           <button onClick={() => this.toggleAutomaticSkip()}>
-                            Automatic Skip: {this.state.shouldSkip ? <span>On</span> : <span>Off</span>}
+                            Ready To Skip: {this.state.shouldSkip ? <span>YES</span> : <span>NO</span>}
                           </button>
                         }
                       </div>
